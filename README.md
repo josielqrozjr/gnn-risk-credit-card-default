@@ -22,18 +22,39 @@ Starter repository for machine learning research on credit default prediction us
 ├── data/
 │   ├── raw/
 │   ├── parquet/
+│   ├── temporal/
 │   ├── customer_features/
 │   └── graphs/
+│       ├── train/
+│       └── test/
+│
 ├── experiments/
 ├── results/
+│
 ├── src/
+│   ├── preprocessing/
 │   ├── temporal_features/
 │   │   └── aggregation.py
 │   ├── graph/
-│   │   └── knn_graph.py
-│   └── models/
-│       ├── gat.py
-│       └── hybrid.py
+│   │   ├── similarity.py
+│   │   ├── knn_graph.py
+│   │   └── graph_validation.py
+│   ├── models/
+│   │   ├── gcn.py
+│   │   ├── graphsage.py
+│   │   ├── gat.py
+│   │   └── hybrid.py
+│   ├── risk/
+│   │   ├── calibration.py
+│   │   └── scoring.py
+│   ├── explainability/
+│   │   ├── gnn_explainer.py
+│   │   └── feature_analysis.py
+│   └── evaluation/
+│       ├── metrics.py
+│       ├── ablation.py
+│       └── robustness.py
+│
 ├── requirements.txt
 └── README.md
 ```
