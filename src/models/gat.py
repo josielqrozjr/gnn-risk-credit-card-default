@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import torch
 from torch import nn
+from torch_geometric.data import Data
 from torch_geometric.nn import GATConv
 
 
@@ -29,7 +30,7 @@ class GATClassifier(nn.Module):
             dropout=dropout,
         )
 
-    def forward(self, data: torch.Tensor) -> torch.Tensor:
+    def forward(self, data: Data) -> torch.Tensor:
         """Run a forward pass given a PyG data object with x and edge_index."""
         x, edge_index = data.x, data.edge_index
         x = nn.functional.dropout(x, p=self.dropout, training=self.training)

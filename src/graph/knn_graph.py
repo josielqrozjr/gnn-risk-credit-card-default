@@ -19,16 +19,24 @@ def build_knn_edge_index(
     if features.ndim != 2:
         raise ValueError("features must be a 2D array")
 
+    if k < 1:
+        raise ValueError("k must be >= 1")
+
     num_nodes = features.shape[0]
-    neighbor_count = k if include_self else k + 1
+    if num_nodes == 0:
+        return np.empty((2, 0), dtype=np.int64)
+
+    requested_neighbors = k if include_self else k + 1
+    neighbor_count = min(requested_neighbors, num_nodes)
 
     if use_faiss:
         try:
             import faiss
 
-            index = faiss.IndexFlatL2(features.shape[1])
-            index.add(features.astype(np.float32))
-            _, indices = index.search(features.astype(np.float32), neighbor_count)
+            features_f32 = np.ascontiguousarray(features, dtype=np.float32)
+            index = faiss.IndexFlatL2(features_f32.shape[1])
+            index.add(features_f32)
+            _, indices = index.search(features_f32, neighbor_count)
         except ImportError:
             indices = _knn_with_sklearn(features, neighbor_count)
     else:
