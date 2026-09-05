@@ -131,14 +131,14 @@ A dimensão temporal mensal de cada cliente será condensada em características
 ### Operações temporais calculadas:
 - Diferenças sucessivas: $\Delta X_t = X_t - X_{t-1}$;
 - Estatísticas descritivas: média, desvio padrão, mínimo, máximo, primeiro e último registro;
-- Tendências e declives: $	ext{total\_delta} = X_{last} - X_{first}$ e $	ext{avg\_monthly\_slope} = rac{X_{last} - X_{first}}{n - 1}$;
+- Tendências e declives: $\mathrm{total\_delta} = X_{last} - X_{first}$ e $\mathrm{avg\_monthly\_slope} = \frac{X_{last} - X_{first}}{n - 1}$;
 - Volatilidade e dinâmicas de estados categóricos (número de transições e último estado).
 
 ---
 
 ## 8. Construção do Grafo Comportamental e Escalabilidade
 
-- **Nós ($V$):** Clientes ($N pprox 458.913$).
+- **Nós ($V$):** Clientes ($N \approx 458.913$).
 - **Arestas ($E$):** Relações de similaridade comportamental calculadas via $k$-Nearest Neighbors ($k$-NN) sobre as features normalizadas.
 - **Topologia Multivisão:** São gerados três grafos esparsos independentes ($G_{3M}$, $G_{6M}$ e $G_{13M}$).
 - **Escalabilidade em M1 (OOM Prevention):**
@@ -159,7 +159,7 @@ A dimensão temporal mensal de cada cliente será condensada em características
 
 ---
 
-# 26. Estudos de Ablação
+# 10. Estudos de Ablação
 
 O estudo de ablação será uma parte central da contribuição científica, pois permitirá separar o efeito de cada componente da metodologia. Em cada comparação, será mantida a mesma divisão por cliente, o mesmo protocolo de pré-processamento e, quando aplicável, o mesmo orçamento de treinamento. Dessa forma, eventuais diferenças de desempenho poderão ser atribuídas principalmente ao componente avaliado.
 
@@ -220,9 +220,7 @@ O GCN representa uma agregação convolucional mais uniforme, o GraphSAGE enfati
 ## Ablação 4 — Fusão
 
 ```text
-Concatenação
-  vs
-Attention Fusion
+Concatenação vs Attention Fusion
 ```
 
 Na concatenação, os embeddings produzidos pelas diferentes visões temporais são unidos diretamente antes da classificação. Na fusão por atenção, o modelo aprende pesos para combinar as representações de 3M, 6M e 13M de acordo com sua relevância para cada cliente ou tarefa.
@@ -272,7 +270,9 @@ Para cada ablação, serão registrados:
 
 As conclusões serão baseadas em diferenças consistentes entre as configurações, e não em uma única métrica ou execução. Quando a diferença for pequena, será reportado que o componente apresentou contribuição limitada ou inconclusiva.
 
-# 27. Estudo de Robustez
+---
+
+# 11. Estudo de Robustez
 
 O estudo de robustez verificará se as conclusões permanecem semelhantes quando são modificadas condições razoáveis do experimento. A finalidade é distinguir um ganho estrutural da metodologia de um resultado dependente de uma seed, de um valor de `k` ou de uma escolha específica de arquitetura.
 
@@ -297,7 +297,7 @@ As análises de robustez não substituirão a avaliação final no teste isolado
 
 ---
 
-## 10. Calibração, Risk Score e Explicabilidade
+## 12. Calibração, Risk Score e Explicabilidade
 
 - **Risk Score:** Mapeamento monotônico das probabilidades de default estimadas ($PD \in [0, 1]$) em escalas interpretáveis de crédito (0 a 1000).
 - **Calibração:** Avaliação via Brier Score e Expected Calibration Error (ECE), utilizando Platt Scaling ou Isotonic Regression ajustadas no fold de validação.
@@ -307,7 +307,7 @@ As análises de robustez não substituirão a avaliação final no teste isolado
 
 ---
 
-## 11. Planejamento Temporal da Pesquisa
+## 13. Planejamento Temporal da Pesquisa
 
 O cronograma do projeto foi estruturado para o período de 10 semanas, com início a partir da submissão desta proposta e conclusão em 31 de outubro.
 
@@ -325,6 +325,6 @@ O cronograma do projeto foi estruturado para o período de 10 semanas, com iníc
 
 ---
 
-## 12. Considerações Finais
+## 14. Considerações Finais
 
 A pesquisa consolida uma investigação rigorosa sobre o ganho informativo de estruturas relacionais combinadas a diferentes horizontes temporais no setor financeiro. Focando no núcleo supervisionado e dispensando abordagens desnecessariamente custosas (como formulações de RL), o projeto viabiliza rigor experimental e factibilidade técnica e computacional para a equipe.
