@@ -59,6 +59,8 @@ def build_knn_edge_index(
             if len(seen) >= target_neighbors:
                 break
 
+    if not src_nodes_list:
+        return np.empty((2, 0), dtype=np.int64)
     return np.vstack([src_nodes_list, dst_nodes_list]).astype(np.int64)
 
 
