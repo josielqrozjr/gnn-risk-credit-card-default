@@ -15,6 +15,8 @@ Starter repository for machine learning research on credit default prediction us
 
 ## Project Structure
 
+`data/`, `experiments/`, and `results/` are intentionally gitignored and should be created/used locally for datasets and outputs.
+
 ```text
 .
 ├── data/

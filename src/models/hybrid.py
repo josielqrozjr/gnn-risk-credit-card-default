@@ -16,15 +16,19 @@ class HybridLightGBMClassifier:
 
     def fit(self, tabular_features: np.ndarray, gnn_embeddings: np.ndarray, y: np.ndarray) -> None:
         """Fit the classifier on concatenated tabular and embedding features."""
-        x = np.concatenate([tabular_features, gnn_embeddings], axis=1)
+        x = self._combine_features(tabular_features, gnn_embeddings)
         self.model.fit(x, y)
 
     def predict_proba(self, tabular_features: np.ndarray, gnn_embeddings: np.ndarray) -> np.ndarray:
         """Predict class probabilities from concatenated feature space."""
-        x = np.concatenate([tabular_features, gnn_embeddings], axis=1)
+        x = self._combine_features(tabular_features, gnn_embeddings)
         return self.model.predict_proba(x)
 
     def predict(self, tabular_features: np.ndarray, gnn_embeddings: np.ndarray) -> np.ndarray:
         """Predict class labels from concatenated feature space."""
-        x = np.concatenate([tabular_features, gnn_embeddings], axis=1)
+        x = self._combine_features(tabular_features, gnn_embeddings)
         return self.model.predict(x)
+
+    @staticmethod
+    def _combine_features(tabular_features: np.ndarray, gnn_embeddings: np.ndarray) -> np.ndarray:
+        return np.concatenate([tabular_features, gnn_embeddings], axis=1)

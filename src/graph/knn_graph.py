@@ -18,6 +18,8 @@ def build_knn_edge_index(
     """
     if features.ndim != 2:
         raise ValueError("features must be a 2D array")
+    if not np.isfinite(features).all():
+        raise ValueError("features must only contain finite values")
 
     if k < 1:
         raise ValueError("k must be >= 1")

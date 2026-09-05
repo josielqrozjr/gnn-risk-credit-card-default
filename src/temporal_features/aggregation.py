@@ -30,7 +30,7 @@ def aggregate_temporal_features(
         .group_by(id_col)
         .agg(
             *[pl.col(c).mean().alias(f"{c}_mean") for c in value_cols],
-            *[pl.col(c).std().alias(f"{c}_std") for c in value_cols],
+            *[pl.col(c).std().fill_null(0.0).alias(f"{c}_std") for c in value_cols],
             *[pl.col(c).last().alias(f"{c}_last") for c in value_cols],
             *[(pl.col(c).last() - pl.col(c).first()).alias(f"{c}_diff") for c in value_cols],
         )
