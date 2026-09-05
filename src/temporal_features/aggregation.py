@@ -18,6 +18,9 @@ def aggregate_temporal_features(
 
     For each value column this computes mean, std, last value (by time), and
     first-to-last difference.
+
+    Returns:
+        pandas.DataFrame: aggregated customer-level features.
     """
     value_cols = list(value_cols)
     frame = pl.from_pandas(df) if isinstance(df, pd.DataFrame) else df

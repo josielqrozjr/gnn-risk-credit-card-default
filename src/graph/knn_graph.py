@@ -26,8 +26,9 @@ def build_knn_edge_index(
     if num_nodes == 0:
         return np.empty((2, 0), dtype=np.int64)
 
-    requested_neighbors = k if include_self else k + 1
+    requested_neighbors = min(k, num_nodes) if include_self else num_nodes
     neighbor_count = min(requested_neighbors, num_nodes)
+    target_neighbors = min(k, num_nodes) if include_self else min(k, max(num_nodes - 1, 0))
 
     if use_faiss:
         try:
@@ -42,15 +43,23 @@ def build_knn_edge_index(
     else:
         indices = _knn_with_sklearn(features, neighbor_count)
 
-    src_nodes = np.repeat(np.arange(num_nodes), neighbor_count)
-    dst_nodes = indices.reshape(-1)
+    src_nodes_list: list[int] = []
+    dst_nodes_list: list[int] = []
+    for src, row in enumerate(indices):
+        seen: set[int] = set()
+        for dst in row:
+            dst_int = int(dst)
+            if not include_self and dst_int == src:
+                continue
+            if dst_int in seen:
+                continue
+            seen.add(dst_int)
+            src_nodes_list.append(src)
+            dst_nodes_list.append(dst_int)
+            if len(seen) >= target_neighbors:
+                break
 
-    if not include_self:
-        mask = src_nodes != dst_nodes
-        src_nodes = src_nodes[mask]
-        dst_nodes = dst_nodes[mask]
-
-    return np.vstack([src_nodes, dst_nodes]).astype(np.int64)
+    return np.vstack([src_nodes_list, dst_nodes_list]).astype(np.int64)
 
 
 def _knn_with_sklearn(features: np.ndarray, neighbor_count: int) -> np.ndarray:
