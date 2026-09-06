@@ -1,0 +1,19 @@
+{
+  "categorical_columns": 1,
+  "customers": 240,
+  "date_max": "2020-06-01",
+  "date_min": "2020-01-01",
+  "duplicate_customer_month_rows": 0,
+  "feature_bytes": 38010,
+  "feature_files": 2,
+  "label_customers": 240,
+  "labels_available": true,
+  "numeric_columns": 3,
+  "raw_feature_columns": 4,
+  "row_groups": 2,
+  "rows": 1440,
+  "target_distribution": {
+    "0": 120,
+    "1": 120
+  }
+}

@@ -16,6 +16,98 @@ As analytical extensions, the study investigates a **calibrated Risk Score** and
 
 The central hypothesis is that **customer relational structure, combined with temporal information, provides additional predictive information that independent tabular models do not capture**.
 
+## 0. MVP Implementation Baseline
+
+### 0.1 Implemented Scope
+
+The current MVP is a reproducible **LightGBM tabular baseline**. It intentionally uses a small scope before graph experiments begin:
+
+- lazy validation of partitioned Parquet features;
+- a deterministic sample capped at 10,000 customers;
+- customer-disjoint and target-stratified train, validation, and test splits of 64%, 16%, and 20%;
+- one complete-history temporal representation;
+- numeric mean, standard deviation, minimum, maximum, last value, and first-to-last difference;
+- latest-state encoding for the 11 predefined categorical variables;
+- preprocessing fitted exclusively on the training partition;
+- LightGBM training with validation-only early stopping and threshold selection;
+- held-out ROC-AUC, PR-AUC, F1, Brier Score, ECE, and AMEX Score;
+- execution logs, environment metadata, model weights, feature importance, and SHA-256 artifact manifests.
+
+GNN training, graph construction, multiview features, hybrid fusion, calibration fitting, explainability, and full-data model training are outside this MVP. The baseline validates the engineering workflow, but it does not yet validate the relational research hypothesis.
+
+### 0.2 Current Execution Status
+
+The local feature data was validated on September 5, 2026.
+
+| Assessment | Observed status |
+|---|---|
+| Data accessibility | Two readable Parquet partitions totaling 6,641,132,041 bytes |
+| Records | 5,531,451 monthly records |
+| Customers | 458,913 unique customers |
+| Coverage | March 1, 2017 through March 31, 2018 |
+| Schema | 190 columns: `customer_ID`, `S_2`, and 188 model attributes |
+| Labels | Blocked: neither feature partition contains `target`, and no separate label file is present |
+| Hardware | Apple M1, 8 CPU cores, 8 GB RAM, approximately 22 GB free disk during preflight |
+| Real AMEX baseline | Pending the customer-level label file |
+| Synthetic smoke run | Passed end to end; used only to validate implementation |
+
+The expected label location is `data/parquet/raw/train_labels.parquet`, with one `customer_ID` and one binary `target` per row. CSV labels are also supported by changing `labels_path` in the configuration. The pipeline fails before training when this contract is not satisfied and preserves a diagnostic evidence package.
+
+Synthetic smoke metrics must not be reported as AMEX baseline results. They are deliberately separable from the real-data artifacts and exist only to prove that every pipeline stage executes:
+
+| Synthetic smoke metric | Value |
+|---|---:|
+| ROC-AUC | 1.0000 |
+| PR-AUC | 1.0000 |
+| F1 | 1.0000 |
+| Brier Score | 0.2256 |
+| ECE | 0.4750 |
+| AMEX Score | 0.9000 |
+
+### 0.3 Reproduction
+
+Python 3.13 is recommended for the current pinned environment.
+
+```bash
+python3.13 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python -m pytest -q
+.venv/bin/python -m scripts.generate_smoke_artifacts
+.venv/bin/python -m src.mvp.run --config configs/mvp.json
+```
+
+The last command currently exits with code `2` because the labels are absent. After the label path is corrected, the same command trains and evaluates the real 10,000-customer baseline.
+
+Tracked evidence:
+
+- [`artifacts/mvp/baseline/`](artifacts/mvp/baseline/): real-data preflight log, profile, environment, failure status, and manifest;
+- [`artifacts/mvp/smoke/`](artifacts/mvp/smoke/): synthetic execution log, metrics, model weights, preprocessing state, feature importance, and manifest.
+
+Raw data, row-level predictions, customer identifiers, processed matrices, and large experiment outputs are never included in these artifact packages.
+
+### 0.4 Skills and Feasibility Assessment
+
+This anonymous matrix evaluates repository evidence rather than claiming individual credentials.
+
+| Capability | Current evidence | Status and mitigation |
+|---|---|---|
+| Parquet and Polars data engineering | Lazy partition discovery, schema validation, and customer filtering | Available for the MVP |
+| Leakage-safe supervised evaluation | Customer-level stratified split and train-only preprocessing | Available and tested |
+| LightGBM baseline modeling | Training, early stopping, persistence, and feature importance | Available and tested |
+| Metrics and experimental reporting | AMEX Score, discrimination, calibration, logs, and manifests | Available and tested |
+| PyTorch Geometric and GNN modeling | Existing starter GAT module without an integrated training run | Gap: begin only after the tabular baseline passes on real labels |
+| Scalable graph construction | Existing sparse kNN utility without a full-data benchmark | Gap: benchmark FAISS and memory use on a bounded sample |
+| Scientific reporting | Research questions, hypotheses, and planned ablations | Available; measured results remain pending |
+
+The timeline remains feasible for a focused project if labels are supplied before graph work begins. The next delivery gates are:
+
+1. **Baseline gate:** add labels, pass the real 10,000-customer run, and review its metrics and resource profile.
+2. **Graph gate:** build and validate one normalized kNN graph on the same customer sample without target leakage.
+3. **GNN gate:** compare one GAT configuration against the frozen LightGBM split and metrics.
+4. **Extension gate:** attempt hybrid fusion or larger samples only if memory, runtime, and baseline quality remain acceptable.
+
+With 8 GB RAM, a full 458,913-customer wide aggregation and graph should not be the default local experiment. The 10,000-customer cap is a deliberate reliability constraint and can be increased through configuration after resource measurements.
+
 ## 1. Research Questions
 
 ### Main Research Question
@@ -51,7 +143,7 @@ The central hypothesis is that **customer relational structure, combined with te
 
 ## 3. Dataset
 
-The study will use only the training portion of the **American Express Default Prediction** competition, comprising `train_data.csv` and `train_labels.csv`. The competition's public test set will not be used to evaluate this study.
+The study uses only the training portion of the **American Express Default Prediction** competition. In the current workspace, the feature table is stored as `data/parquet/raw/data_0.parquet` and `data/parquet/raw/data_1.parquet`. Customer-level labels must be supplied separately as Parquet or CSV. The competition's public test set will not be used to evaluate this study.
 
 The experimental dataset contains approximately:
 
@@ -152,7 +244,7 @@ Each customer's monthly temporal dimension will be condensed into static and dyn
 - Trends and slopes: `total_delta` = $X_{\mathrm{last}} - X_{\mathrm{first}}$, and `avg_monthly_slope` = $\frac{X_{\mathrm{last}} - X_{\mathrm{first}}}{n - 1}$.
 - Volatility and categorical-state dynamics, including the number of transitions and the last state.
 
-The existing `aggregate_temporal_features` utility currently computes the mean, standard deviation, last value, and first-to-last difference for each selected numerical attribute. The remaining planned statistics, categorical transitions, and explicit 3M/6M/13M orchestration will extend this module.
+The implemented `aggregate_temporal_features` utility computes mean, standard deviation, minimum, maximum, last value, and first-to-last difference for numerical attributes. It also retains the latest categorical state. Explicit 3M/6M/13M orchestration and categorical transition counts remain planned extensions.
 
 ## 7. Behavioral Graph Construction and Scalability
 
@@ -366,15 +458,23 @@ The project schedule covers ten weeks, beginning with the submission of the prop
 
 ## 13. Repository and Source Code
 
-The repository separates reusable source modules from local datasets, experimental scripts, generated artifacts, and research documents. The codebase is currently a starter implementation: four source modules exist, while the remaining modules shown below define the intended final architecture.
+The repository separates reusable source modules from local datasets, experimental scripts, lightweight evidence, and research documents. The current implementation includes a tested tabular MVP while the graph research modules remain an extension path.
 
 ### 13.1 Current Source Modules
 
-- `src/temporal_features/aggregation.py`: aggregates customer time series into customer-level mean, standard deviation, last-value, and difference features.
+- `src/data/parquet_dataset.py`: validates feature partitions and customer-level labels, profiles the dataset, and loads selected customers.
+- `src/preprocessing/splitting.py`: creates deterministic, stratified, customer-disjoint partitions.
+- `src/preprocessing/transformations.py`: learns imputations, feature filtering, and categorical mappings from training data only.
+- `src/temporal_features/aggregation.py`: aggregates customer histories into numerical statistics and latest categorical states.
+- `src/models/lightgbm_baseline.py`: trains, evaluates, and saves the MVP baseline.
+- `src/evaluation/metrics.py`: implements AMEX Score, ROC-AUC, PR-AUC, F1, Brier Score, and ECE.
+- `src/reporting/artifacts.py`: writes atomic artifacts and SHA-256 manifests.
+- `src/mvp/pipeline.py` and `src/mvp/run.py`: provide orchestration and the command-line entry point.
 - `src/graph/knn_graph.py`: validates feature matrices and builds sparse directed k-NN edge indices with scikit-learn or FAISS.
 - `src/models/gat.py`: provides a two-layer PyTorch Geometric GAT classifier for node-level prediction.
 - `src/models/hybrid.py`: concatenates tabular features with GNN embeddings and trains a LightGBM classifier.
-- `requirements.txt`: declares the Python libraries used by the planned pipeline.
+- `tests/`: covers configuration, schemas, splitting, temporal aggregation, preprocessing, metrics, privacy, artifact integrity, and the end-to-end CLI.
+- `requirements.txt`: pins the tabular MVP runtime; `requirements-gnn.txt` contains optional future graph dependencies.
 - `overleaf/`: existing local directory reserved for the research article and related publication assets.
 
 ### 13.2 Current and Planned Directory Structure
@@ -390,14 +490,21 @@ The markers below distinguish the current filesystem from the intended architect
 ├── .gitignore                                      [existing]
 ├── LICENSE                                         [existing]
 ├── README.md                                       [existing]
-├── requirements.txt                                [existing]
+├── requirements.txt                                [existing, MVP]
+├── requirements-dev.txt                            [existing, tests]
+├── requirements-gnn.txt                            [existing, future GNN work]
+├── configs/mvp.json                                [existing]
+├── artifacts/mvp/                                  [existing, tracked evidence]
+│   ├── baseline/                                   [existing, real-data preflight]
+│   └── smoke/                                      [existing, synthetic validation]
 ├── overleaf/                                       [existing]
 │   └── publication sources and assets              [planned]
-├── data/                                           [planned, local]
-│   ├── raw/                                        [planned, local]
-│   │   ├── train_data.csv                          [planned, local]
-│   │   └── train_labels.csv                        [planned, local]
-│   ├── parquet/                                    [planned, local]
+├── data/                                           [existing, local]
+│   ├── parquet/                                    [existing, local]
+│   │   └── raw/                                    [existing, local]
+│   │       ├── data_0.parquet                      [existing, local]
+│   │       ├── data_1.parquet                      [existing, local]
+│   │       └── train_labels.parquet                [required, currently missing]
 │   ├── temporal/                                   [planned, local]
 │   ├── customer_features/                          [planned, local]
 │   └── graphs/                                     [planned, local]
@@ -416,10 +523,10 @@ The markers below distinguish the current filesystem from the intended architect
 │   ├── explanations/                               [planned, local]
 │   └── models/                                     [planned, local]
 └── src/                                            [existing]
-    ├── preprocessing/                              [planned]
-    │   ├── data_validation.py                      [planned]
-    │   ├── splitting.py                            [planned]
-    │   └── transformations.py                      [planned]
+    ├── data/parquet_dataset.py                     [existing]
+    ├── preprocessing/                              [existing]
+    │   ├── splitting.py                            [existing]
+    │   └── transformations.py                      [existing]
     ├── temporal_features/                          [existing]
     │   └── aggregation.py                          [existing]
     ├── graph/                                      [existing]
@@ -427,6 +534,7 @@ The markers below distinguish the current filesystem from the intended architect
     │   ├── knn_graph.py                            [existing]
     │   └── graph_validation.py                     [planned]
     ├── models/                                     [existing]
+    │   ├── lightgbm_baseline.py                    [existing]
     │   ├── gcn.py                                  [planned]
     │   ├── graphsage.py                            [planned]
     │   ├── gat.py                                  [existing]
@@ -438,33 +546,39 @@ The markers below distinguish the current filesystem from the intended architect
     ├── explainability/                             [planned]
     │   ├── gnn_explainer.py                        [planned]
     │   └── feature_analysis.py                     [planned]
-    └── evaluation/                                 [planned]
-        ├── metrics.py                              [planned]
+    ├── reporting/artifacts.py                      [existing]
+    ├── mvp/                                        [existing]
+    │   ├── config.py                               [existing]
+    │   ├── pipeline.py                             [existing]
+    │   └── run.py                                  [existing]
+    └── evaluation/                                 [existing]
+        ├── metrics.py                              [existing]
         ├── ablation.py                             [planned]
         └── robustness.py                           [planned]
 ```
 
-Local dataset and output directories should not be committed. They must contain only data obtained under the AMEX competition terms, intermediate artifacts, model checkpoints, metrics, figures, and explanations produced by local experiments.
+Local datasets and heavy output directories must not be committed. Only sanitized files under `artifacts/mvp/` are intended for Git. These packages must not contain raw records, customer identifiers, or row-level predictions.
 
 ### 13.3 Dependencies
 
-The declared Python dependencies are:
+The default dependencies are limited to the executable tabular MVP:
 
-- PyTorch and PyTorch Geometric for GNN training;
 - Pandas and Polars for tabular and temporal processing;
-- scikit-learn for preprocessing, nearest-neighbor search, calibration, and evaluation;
+- PyArrow for Parquet metadata and schema validation;
+- scikit-learn for splitting and evaluation;
 - LightGBM for tabular and hybrid models;
-- SHAP for feature-level explanations;
-- FAISS CPU for scalable nearest-neighbor search.
+- psutil and joblib for environment reporting and preprocessing persistence.
 
 Install them with:
 
 ```bash
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 ```
+
+Future graph experiments can install `requirements-gnn.txt` after the baseline gate passes.
 
 ## 14. Final Considerations
 
 This research establishes a rigorous investigation into the information gain produced by relational structures combined with different temporal horizons in the financial domain. By focusing on the supervised core and excluding unnecessarily costly approaches such as reinforcement-learning formulations, the project preserves experimental rigor and remains technically and computationally feasible for the team.
 
-The repository will evolve incrementally from its current starter modules toward the complete pipeline documented above. Every implementation stage should preserve customer-disjoint evaluation, target-independent topology construction, inductive inference, sparse graph processing, reproducible ablations, and a final one-time evaluation on the held-out test set.
+The repository will evolve incrementally from its tested tabular MVP toward the complete graph pipeline documented above. Every implementation stage should preserve customer-disjoint evaluation, target-independent topology construction, inductive inference, sparse graph processing, reproducible ablations, and a final one-time evaluation on the held-out test set.

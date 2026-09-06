@@ -1,0 +1,27 @@
+{
+  "artifacts_dir": "artifacts/mvp/smoke",
+  "data": {
+    "features_glob": "/var/folders/yy/4yvdzw6j2p1gwdds4c3zmtm00000gn/T/gnn-risk-mvp-smoke-k9c2omok/data_*.parquet",
+    "id_column": "customer_ID",
+    "labels_path": "/var/folders/yy/4yvdzw6j2p1gwdds4c3zmtm00000gn/T/gnn-risk-mvp-smoke-k9c2omok/labels.parquet",
+    "sample_customers": 200,
+    "target_column": "target",
+    "time_column": "S_2"
+  },
+  "evaluation": {
+    "ece_bins": 10
+  },
+  "model": {
+    "learning_rate": 0.05,
+    "max_depth": -1,
+    "n_estimators": 40,
+    "n_jobs": 1,
+    "num_leaves": 15
+  },
+  "seed": 42,
+  "split": {
+    "test_fraction": 0.2,
+    "train_fraction": 0.64,
+    "validation_fraction": 0.16
+  }
+}
