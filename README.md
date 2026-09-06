@@ -149,7 +149,7 @@ Each customer's monthly temporal dimension will be condensed into static and dyn
 
 - Successive differences: $\Delta X_t = X_t - X_{t-1}$.
 - Descriptive statistics: mean, standard deviation, minimum, maximum, first record, and last record.
-- Trends and slopes: $\mathrm{total}_{\mathrm{delta}} = X_{\mathrm{last}} - X_{\mathrm{first}}$ and $\mathrm{avg}_{\mathrm{monthly\ slope}} = \frac{X_{\mathrm{last}} - X_{\mathrm{first}}}{n - 1}$.
+- Trends and slopes: `total_delta` = $X_{\mathrm{last}} - X_{\mathrm{first}}$, and `avg_monthly_slope` = $\frac{X_{\mathrm{last}} - X_{\mathrm{first}}}{n - 1}$.
 - Volatility and categorical-state dynamics, including the number of transitions and the last state.
 
 The existing `aggregate_temporal_features` utility currently computes the mean, standard deviation, last value, and first-to-last difference for each selected numerical attribute. The remaining planned statistics, categorical transitions, and explicit 3M/6M/13M orchestration will extend this module.
