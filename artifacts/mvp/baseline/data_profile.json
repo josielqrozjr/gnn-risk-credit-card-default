@@ -1,0 +1,14 @@
+{
+  "categorical_columns": 11,
+  "customers": 458913,
+  "date_max": "2018-03-31",
+  "date_min": "2017-03-01",
+  "duplicate_customer_month_rows": 0,
+  "feature_bytes": 6641132041,
+  "feature_files": 2,
+  "labels_available": false,
+  "numeric_columns": 177,
+  "raw_feature_columns": 188,
+  "row_groups": 24,
+  "rows": 5531451
+}

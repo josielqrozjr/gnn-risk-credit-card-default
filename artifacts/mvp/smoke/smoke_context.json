@@ -1,0 +1,6 @@
+{
+  "customer_count": 200,
+  "dataset": "deterministic synthetic data",
+  "purpose": "pipeline validation only",
+  "report_as_amex_baseline": false
+}

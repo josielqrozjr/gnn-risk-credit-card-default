@@ -1,0 +1,64 @@
+{
+  "files": [
+    {
+      "bytes": 697,
+      "path": "config.json",
+      "sha256": "4e732af1a0b447db438499bb5b9c215ee633980e899cd79787a3e1f1c6ac5dc3"
+    },
+    {
+      "bytes": 393,
+      "path": "data_profile.json",
+      "sha256": "1f2a672665e15388be8c6cb44cf364a5ffbc50f3d81e6c90f70f3d3ead8f2b05"
+    },
+    {
+      "bytes": 467,
+      "path": "environment.json",
+      "sha256": "f2d1ec9de34219f78e9136b97e6fcfebe1f93e0874357efdff9e251a05fdd9df"
+    },
+    {
+      "bytes": 1033,
+      "path": "execution.log",
+      "sha256": "4ce9d83e5ea29744b57c3ba9f1cf952f488db2cec10c29e1c82dbe13cbb88263"
+    },
+    {
+      "bytes": 265,
+      "path": "feature_importance.csv",
+      "sha256": "124f9943086b5dfc08e3c993059be7eeadd7f01dd888277fa472107217645d67"
+    },
+    {
+      "bytes": 263,
+      "path": "metrics.json",
+      "sha256": "9b07bd2646298d301460e28206978c88fc94d028cf03dd9f91dbd57e5b7532ec"
+    },
+    {
+      "bytes": 4105,
+      "path": "model.txt",
+      "sha256": "385c94ef4eed5edce79f97f8da20ef5b17fc5c2ed68b2e4296b5bc1fdf6aa26b"
+    },
+    {
+      "bytes": 658,
+      "path": "preprocessor.joblib",
+      "sha256": "4d1cd2c3c8954a3f1bcf18ba68bcf60c77b6d1ba1b636f3517cc6ee9aa903680"
+    },
+    {
+      "bytes": 427,
+      "path": "run_status.json",
+      "sha256": "7d2144c8ceb9e2445e0a840a15e7ac35b1f8c5dd589923971a7352958f4122dd"
+    },
+    {
+      "bytes": 150,
+      "path": "smoke_context.json",
+      "sha256": "a949a5f8aede33db01ff81a6cfec9394cc2d7572d5b1a3cf383cd4ce8e9f3d11"
+    },
+    {
+      "bytes": 242,
+      "path": "split_summary.json",
+      "sha256": "c3bcc6aab95e05f5b8cc3986a1b00bc02d35ceb1e49f67e4830cba4738179f23"
+    }
+  ],
+  "generated_at_utc": "2026-09-06T02:05:45.527412+00:00",
+  "run": {
+    "command": "python -m scripts.generate_smoke_artifacts",
+    "seed": 42
+  }
+}

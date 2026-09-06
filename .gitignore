@@ -224,3 +224,12 @@ __marimo__/
 data/
 experiments/
 results/
+
+# Only lightweight, sanitized MVP evidence is tracked.
+artifacts/*
+!artifacts/mvp/
+artifacts/mvp/*
+!artifacts/mvp/baseline/
+!artifacts/mvp/smoke/
+!artifacts/mvp/baseline/**
+!artifacts/mvp/smoke/**

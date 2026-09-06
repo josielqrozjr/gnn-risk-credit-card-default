@@ -1,0 +1,13 @@
+{
+  "amex_score": 0.9,
+  "brier_score": 0.225644772328168,
+  "ece": 0.47502081252105977,
+  "f1": 1.0,
+  "false_negative": 0,
+  "false_positive": 0,
+  "pr_auc": 1.0,
+  "roc_auc": 1.0,
+  "threshold": 0.52497918747894,
+  "true_negative": 20,
+  "true_positive": 20
+}

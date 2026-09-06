@@ -1,0 +1,34 @@
+{
+  "files": [
+    {
+      "bytes": 589,
+      "path": "config.json",
+      "sha256": "44fc064e6673a881968e9169d434291772d6a46c2b1cd30336ee32ed02be4993"
+    },
+    {
+      "bytes": 326,
+      "path": "data_profile.json",
+      "sha256": "e461f81596163194cc7e767751e3af7a5e666424dea48829ab5e451cfc1ad149"
+    },
+    {
+      "bytes": 467,
+      "path": "environment.json",
+      "sha256": "775999202a5948d15fc6408c4fac7caa1121e04f07c50e11a0eb182dc9a957d8"
+    },
+    {
+      "bytes": 932,
+      "path": "execution.log",
+      "sha256": "1973b5818b5744be79c9ba683fcb26a485dde9a90e689ff4e1d908868f110df6"
+    },
+    {
+      "bytes": 361,
+      "path": "run_status.json",
+      "sha256": "6eff748967978632872871533b1a61d950d3be20b4eef92a90e32f9abf043c90"
+    }
+  ],
+  "generated_at_utc": "2026-09-06T02:07:51.353697+00:00",
+  "run": {
+    "command": "python -m src.mvp.run --config configs/mvp.json",
+    "seed": 42
+  }
+}

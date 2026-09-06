@@ -1,0 +1,27 @@
+{
+  "data": {
+    "features_glob": "data/parquet/raw/data_*.parquet",
+    "labels_path": "data/parquet/raw/train_labels.parquet",
+    "id_column": "customer_ID",
+    "time_column": "S_2",
+    "target_column": "target",
+    "sample_customers": 10000
+  },
+  "split": {
+    "train_fraction": 0.64,
+    "validation_fraction": 0.16,
+    "test_fraction": 0.20
+  },
+  "model": {
+    "n_estimators": 250,
+    "learning_rate": 0.05,
+    "num_leaves": 31,
+    "max_depth": -1,
+    "n_jobs": 4
+  },
+  "evaluation": {
+    "ece_bins": 10
+  },
+  "artifacts_dir": "artifacts/mvp/baseline",
+  "seed": 42
+}

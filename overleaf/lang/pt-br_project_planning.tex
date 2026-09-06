@@ -1,0 +1,189 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazilian]{babel}
+\usepackage{array}
+\usepackage[table]{xcolor}
+\usepackage{makecell}
+\newcommand{\cmark}{\textbf{X}} 
+\usepackage{graphicx} 
+\usepackage{svg}
+\usepackage{booktabs}
+\usepackage[hyphens]{url}
+\usepackage[colorlinks=true,allcolors=black]{hyperref}
+\usepackage{soul} 
+\setuldepth{Berlin}
+
+
+\title{Previsão de inadimplência em cartões de crédito utilizando redes neurais de grafos relacionais e características temporais
+}
+
+\author{
+\IEEEauthorblockA{Creative Experience: Transformative Project II\\
+Bachelor’s in Computer Science -- PUCPR
+\\
+Class A -- Team VII \\
+João Vitor de Lima Antunes, Josiel S. Queiroz Júnior, Mateus Alves Ramos, Matheus Enrique Alves Feliciano Moreira \\
+{\tt\small \{antunes.j, josiel.queiroz, r.avles10, matheus.enrique\}@pucpr.edu.br}
+}
+}
+
+\date{}
+
+\sloppy
+\begin{document}
+
+\maketitle
+
+\section{Project Description}
+\label{sec:intro}
+
+A predição de inadimplência apoia decisões de concessão e gestão de risco no crédito ao consumidor. A competição promovida pela American Express (AMEX) sobre default prediction disponibilizou dados comportamentais em série temporal e informações anonimizadas de clientes para estimar a probabilidade de inadimplência futura \cite{amex-default-prediction}. Modelos de aprendizado de máquina já foram comparados a métodos paramétricos de risco de crédito, com resultados favoráveis ao modelo não paramétrico no conjunto analisado por Bitetto et al. \cite{BITETTO2023101746}.
+
+Modelos tabulares representam cada cliente por seus próprios atributos, mas não modelam diretamente dependências entre entidades presentes nos históricos financeiros \cite{yang2026relationalgraphmodelingcredit}. Em estudos de risco de crédito, grafos têm sido usados para representar mutuários como nós e suas relações como arestas, permitindo agregar informações dos seus vizinhos \cite{sun2024applyinghybridgraphneural,SUN2025763}. Modelos com redes dinâmicas e múltiplas camadas também incorporaram a evolução das conexões e atribuíram pesos a diferentes instantes na previsão de inadimplência \cite{ZANDI2025586}.
+
+O problema investigado é determinar se relações inferidas por similaridade comportamental acrescentam informação preditiva aos atributos individuais dos clientes da AMEX. A pergunta de pesquisa é: \textit{a representação relacional e temporal de clientes por meio de Graph Neural Networks melhora a detecção de inadimplência em comparação com modelos tabulares?} Essa comparação é necessária porque GNNs isoladas podem apresentar ganho limitado sobre árvores com gradient boosting, enquanto a combinação de atributos tabulares com embeddings relacionais obteve o melhor resultado no estudo de Yang e Vasistha \cite{yang2026relationalgraphmodelingcredit}.
+
+Para responder à pergunta, os históricos mensais serão condensados em representações de curto, médio e longo prazo, correspondentes a janelas de 3, 6 e 13 meses. Cada cliente será um nó, e as arestas serão definidas por similaridade entre atributos comportamentais, sem uso do rótulo de inadimplência representado pelo \texttt{target}. GCN (Graph Convolutional Network), GraphSAGE (Graph Sample and Aggregate) e GAT (Graph Attention Network) serão comparadas a um baseline LightGBM e a um modelo híbrido que combina atributos tabulares e embeddings da GNN, seguindo estratégias relacionais, temporais e híbridas descritas na literatura \cite{sun2024applyinghybridgraphneural,ZANDI2025586,yang2026relationalgraphmodelingcredit}.
+
+O objetivo principal é medir o ganho da representação relacional-temporal sobre o baseline tabular. Os objetivos específicos são comparar horizontes temporais e arquiteturas de GNN, verificar a complementaridade entre atributos tabulares e embeddings relacionais, avaliar a calibração das probabilidades e examinar as contribuições de atributos e vizinhos para as previsões. O uso de SHAP (SHapley Additive exPlanations) em modelos de crédito e de análises relacionais de explicabilidade fornece referência para a interpretação dos resultados previstos neste estudo \cite{BITETTO2023101746,yang2025interpretable,yang2026relationalgraphmodelingcredit}. A Fig.~\ref{fig:diagram-solution-planning} resume o fluxo da proposta.
+
+\begin{figure}[htbp]
+    \centering
+    \includesvg[width=0.8\linewidth]{../assets/diagram-planning.svg}
+    \vspace{-2mm}
+    \caption{Fluxograma proposto para predição de inadimplência com representações tabulares, temporais e relacionais.}
+    \label{fig:diagram-solution-planning}
+\end{figure}
+
+\section{Materials and Methods}
+\label{sec:materials}
+
+Será utilizada a porção de treinamento da American Express Default Prediction, composta por \texttt{train\_data.csv} e \texttt{train\_labels.csv}. Ela contém 5.531.451 registros mensais de 458.913 clientes, cerca de 190 atributos anonimizados e até 13 registros anteriores ao desfecho por \texttt{customer\_ID} \cite{amex-default-prediction}. O teste público da competição não será usado. A divisão estratificada por cliente reservará 20\% para teste interno; dos 80\% de desenvolvimento, 20\% serão usados como validação, resultando em 64\%/16\%/20\% para treino, validação e teste. A Fig.~\ref{fig:amex-sample} representa a organização temporal dos dados.
+
+\begin{figure}[htbp]
+    \centering
+    \scriptsize
+    \renewcommand{\arraystretch}{1.1}
+    \resizebox{\columnwidth}{!}{%
+    \begin{tabular}{c c c c c c}
+        \toprule
+        \texttt{customer\_ID} & \texttt{S\_2} & \texttt{D\_*} & \texttt{S\_*} & \texttt{P\_*/B\_*/R\_*} & \texttt{target} \\
+        \midrule
+        $c_i$ & $t_1$ & $d_{i,1}$ & $s_{i,1}$ & $x_{i,1}$ & $y_i$ \\
+        $c_i$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $y_i$ \\
+        $c_i$ & $t_{n_i}$ & $d_{i,n_i}$ & $s_{i,n_i}$ & $x_{i,n_i}$ & $y_i$ \\
+        \bottomrule
+    \end{tabular}%
+    }
+    \vspace{0.5mm}
+
+    Registros mensais ($n_i \leq 13$) $\rightarrow$ janelas 3M, 6M e 13M $\rightarrow$ vetores por cliente
+    \vspace{-1mm}
+    \caption{Representação conceitual dos registros temporais e do rótulo por cliente na base AMEX.}
+    \label{fig:amex-sample}
+\end{figure}
+
+Os registros serão ordenados por \texttt{customer\_ID} e \texttt{S\_2}. Para atributos numéricos, serão calculados média, desvio padrão, mínimo, máximo, primeiro e último valor, diferença total e inclinação média; para os categóricos, último estado, número de estados e transições. Essas operações determinísticas serão repetidas nas janelas de 3, 6 e 13 meses \cite{shukla2024featureengineering,li2026temporalfeatureengineering,zheng2018feature}. A divisão por cliente ocorrerá antes de imputação, normalização ou seleção, que serão ajustadas somente no treino de cada experimento.
+
+Para cada janela, os clientes serão ligados aos seus $k$ vizinhos mais próximos a partir dos atributos normalizados, sem uso do \texttt{target}. Serão comparados $k\in\{5,10,20\}$ e distâncias euclidiana e cosseno \cite{SUN2025763}. O índice k-NN (\textit{K-Nearest Neighbors}) será ajustado somente com clientes de treino. Clientes de validação e teste consultarão esse índice por arestas direcionadas dos vizinhos de treino para o nó reservado; não haverá arestas entre nós reservados nem mensagens deles para o grafo de treino. A busca aproximada será usada quando necessário, com armazenamento em lista esparsa de arestas.
+
+As arquiteturas GCN, GraphSAGE e GAT serão avaliadas sob as mesmas partições e orçamento de ajuste \cite{sun2024applyinghybridgraphneural,SUN2025763,ZANDI2025586}. Após o treinamento, o codificador será congelado e a inferência usará o grafo de treino acrescido apenas das arestas de consulta definidas acima. As representações das três janelas serão combinadas por concatenação e por atenção. LightGBM será o modelo tabular de referência e o classificador híbrido receberá atributos tabulares e representações da GNN. Para evitar ajuste do segundo estágio a representações produzidas sobre os mesmos rótulos, seu treinamento usará representações GNN fora da dobra \cite{zheng2022xgboostlightgbm,zhu2024localensemble,yang2026relationalgraphmodelingcredit}.
+
+O protocolo principal será indutivo, e o teste será usado uma única vez. A métrica principal será o AMEX Score, calculado conforme a definição oficial: média do Gini normalizado e da taxa de positivos contidos nos primeiros 4\% da massa ponderada de observações ordenadas pela predição, com peso 20 para negativos e 1 para positivos \cite{amex-default-prediction}. ROC-AUC, PR-AUC, F1 Score, Brier Score e ECE (\textit{Expected Calibration Error}) serão métricas secundárias; o limiar de F1 será escolhido na validação, e a ECE usará dez intervalos de largura uniforme. A calibração de Platt será ajustada na validação. Ablações e repetições com sementes distintas serão feitas antes do teste. SHAP explicará o modelo tabular; vizinhos e pesos de atenção serão relatados apenas como diagnósticos descritivos \cite{BITETTO2023101746,yang2025interpretable,yang2026relationalgraphmodelingcredit}.
+
+A implementação usará Python, Polars/Pandas, scikit-learn, PyTorch Geometric, LightGBM, SHAP e FAISS. A equipe já dispõe de módulos iniciais de agregação temporal, construção k-NN, GAT e fusão com LightGBM. Os recursos são um MacBook Pro M1 e um MacBook Air M1 com 8 GB, sem GPU CUDA. Por isso, os testes começarão em amostras piloto e usarão processamento por partes, busca aproximada, grafos esparsos e amostragem de vizinhos. Se necessário, lotes e configurações simultâneas serão reduzidos sem alterar as partições. A Tabela~\ref{tab:materials_methods} sintetiza a execução.
+
+\begin{table*}[!htp]
+\centering
+\renewcommand{\arraystretch}{1.4}
+
+\caption{Resumo dos materiais e métodos.}
+\label{tab:materials_methods}
+
+\vspace{-1.5mm}
+
+\resizebox{0.95\textwidth}{!}{%
+\begin{tabular}{p{3cm} p{7cm} p{6cm}}
+\toprule
+\textbf{Materiais} & \textbf{Descrição} & \textbf{Observações} \\
+\midrule
+Base de dados & AMEX: histórico mensal, atributos anonimizados e rótulo de inadimplência por cliente \cite{amex-default-prediction}. & Separação por \texttt{customer\_ID}; teste público da competição não utilizado. \\
+Representação temporal & Estatísticas e variações calculadas nas janelas de 3M, 6M e 13M \cite{li2026temporalfeatureengineering}. & Transformações ajustadas somente no conjunto de treino. \\
+Construção dos grafos & k-NN por similaridade; listas de arestas esparsas; $k\in\{5,10,20\}$ \cite{SUN2025763}. & Sem uso do \texttt{target}; busca aproximada quando necessária. \\
+Modelos & LightGBM, GCN, GraphSAGE, GAT e fusão tabular--GNN \cite{ZANDI2025586,yang2026relationalgraphmodelingcredit}. & Comparação sob a mesma divisão de clientes. \\
+Avaliação & AMEX Score, ROC-AUC, PR-AUC, F1, Brier Score, ECE e estudos de ablação \cite{amex-default-prediction}. & Seleção no treino/validação e avaliação final no teste isolado. \\
+Linguagem e bibliotecas & Python, Polars/Pandas, scikit-learn, PyTorch Geometric, FAISS, LightGBM/XGBoost e SHAP \cite{zheng2022xgboostlightgbm,yang2025interpretable}. & Processamento temporal, modelagem, avaliação e explicabilidade. \\
+Hardware e recursos & MacBook Pro M1 e MacBook Air M1 (8 GB). & Processamento por partes, grafos esparsos e amostragem de vizinhos. \\
+Organização do trabalho & Dados; grafos e modelos; avaliação e explicabilidade; integração e redação. & Frentes executadas em paralelo conforme as dependências do pipeline. \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+
+\section{Project Stages and Physical Milestones}
+\label{sec:stages}
+
+As etapas seguem o fluxo apresentado na Fig.~\ref{fig:diagram-solution-planning}. Cada marco físico corresponde a um artefato verificável, como relatório de integridade, matrizes de atributos, grafos, modelos treinados ou resultados consolidados. A distribuição temporal dessas atividades é apresentada na Seção~\ref{sec:schedule}.
+
+\subsection{Fundamentação e protocolo experimental}
+
+A revisão do estado da arte definirá modelos de referência, GNNs, métricas e explicabilidade. O protocolo fixará partições por cliente, ajustes restritos ao treino, seleção na validação e uso único do teste. Marco físico: protocolo e matriz de experimentos que associem cada hipótese a comparação, métrica e critério de análise.
+
+\subsection{Ingestão, validação e preparação dos dados}
+
+Os arquivos serão verificados quanto a esquema, valores ausentes, duplicidades, alvo e ordem temporal, e convertidos para processamento por partes. A divisão 64\%/16\%/20\% não compartilhará clientes. Marco de entrega: dados particionados e relatório de integridade, com contagens reproduzíveis e ausência de sobreposição.
+
+\subsection{Representação temporal e construção dos grafos}
+
+Serão produzidos vetores de 3, 6 e 13 meses e variantes esparsas de grafo para cada combinação de $k$ e distância. A validação selecionará uma configuração por horizonte; o alvo nunca criará arestas. Marco de entrega: três matrizes de atributos, três grafos selecionados e estatísticas de conectividade, carregáveis sem matrizes densas nem valores inválidos.
+
+\subsection{Baselines, GNNs e fusão híbrida}
+
+LightGBM, GCN, GraphSAGE e GAT serão treinados primeiro em amostras piloto. Concatenação e atenção combinarão os horizontes, e o híbrido usará representações GNN fora da dobra. Marco de entrega: código, modelos, hiperparâmetros e resultados preliminares. A conclusão exigirá inferência indutiva reproduzível sob as mesmas partições.
+
+\subsection{Inferência, avaliação e comunicação dos resultados}
+
+Após a seleção e a calibração na validação, o teste isolado produzirá a avaliação final. Ablações anteriores examinarão relações, horizontes, arquiteturas, fusões, $k$ e sementes. SHAP, vizinhos e pesos de atenção apoiarão a interpretação sem atribuição causal. Marco de entrega: métricas, ablações, gráficos de calibração, explicações selecionadas, respositório de código fonte \cite{gnnriskcreditcarddefault2026} e manuscrito revisado, concluído quando os resultados responderem à pergunta de pesquisa.
+
+\section{Schedule}
+\label{sec:schedule}
+
+O projeto será executado em dez semanas, contadas a partir da submissão deste plano até a entrega final em 31 de outubro. A distribuição temporal é apresentada na Tabela~\ref{tab:schedule} e corresponde às etapas e aos marcos físicos definidos na Seção~\ref{sec:stages}. As atividades de implementação, análise e redação serão realizadas em paralelo quando não houver dependência entre elas, outrossim, os checkpoints da disciplina serão atendidos pelos artefatos produzidos ao final de cada período.
+
+\begin{table}[!htp]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\caption{Cronograma do projeto, da submissão deste plano à entrega final em 31 de outubro.}
+\label{tab:schedule}
+
+\vspace{-1.5mm}
+
+\resizebox{0.99\linewidth}{!}{%
+\begin{tabular}{l c c c c c}
+\toprule
+\textbf{Atividade} &
+\makecell[c]{\textbf{Semanas 1--2}} &
+\makecell[c]{\textbf{Semanas 3--4}} &
+\makecell[c]{\textbf{Semanas 5--6}} &
+\makecell[c]{\textbf{Semanas 7--8}} &
+\makecell[c]{\textbf{Semanas 9--10}\\\textbf{(até 31/10)}} \\
+\midrule
+\rowcolor{gray!10} Levantamento do estado da arte & \cmark &   &   &   &   \\
+Processamento do conjunto de dados                  & \cmark & \cmark &   &   &   \\
+\rowcolor{gray!10} Experimentação 1: modelo tabular e grafos piloto &        & \cmark & \cmark &        &   \\
+\rowcolor{gray!10} Experimentação 2: arquiteturas GCN, GraphSAGE e GAT &        &        & \cmark &        &   \\
+\rowcolor{gray!10} Experimentação 3: multivisão, modelo híbrido e calibração &        &        & \cmark & \cmark   &   \\
+Análise dos resultados e explicabilidade            &        &        & \cmark & \cmark &   \\
+\rowcolor{gray!10} Redação do manuscrito            &        &        & \cmark & \cmark & \cmark \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\bibliographystyle{IEEEtran}
+\bibliography{bibtex}
+
+\end{document}
