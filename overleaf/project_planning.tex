@@ -1,0 +1,189 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[american]{babel}
+\usepackage{array}
+\usepackage[table]{xcolor}
+\usepackage{makecell}
+\newcommand{\cmark}{\textbf{X}} 
+\usepackage{graphicx} 
+\usepackage{svg}
+\usepackage{booktabs}
+\usepackage[hyphens]{url}
+\usepackage[colorlinks=true,allcolors=black]{hyperref}
+\usepackage{soul} 
+\setuldepth{Berlin}
+
+
+\title{Credit Card Default Prediction Using Relational Graph Neural Networks and Temporal Features
+}
+
+\author{
+\IEEEauthorblockA{Creative Experience: Transformative Project II\\
+Bachelor’s in Computer Science -- PUCPR
+\\
+Class A -- Team VII \\
+João Vitor de Lima Antunes, Josiel S. Queiroz Júnior, Mateus Alves Ramos, Matheus Enrique Alves Feliciano Moreira \\
+{\tt\small \{antunes.j, josiel.queiroz, r.avles10, matheus.enrique\}@pucpr.edu.br}
+}
+}
+
+\date{}
+
+\sloppy
+\begin{document}
+
+\maketitle
+
+\section{Project Description}
+\label{sec:intro}
+
+Credit default prediction supports lending and risk management decisions in consumer credit. The American Express (AMEX) Default Prediction competition provided time-series behavioral data and anonymized customer information to estimate the probability of future default \cite{amex-default-prediction}. Machine learning models have already been compared with parametric credit risk methods, with results favoring the nonparametric model on the dataset analyzed by Bitetto et al. \cite{BITETTO2023101746}.
+
+Tabular models represent each customer through their own attributes but do not directly model dependencies among entities in financial histories \cite{yang2026relationalgraphmodelingcredit}. In credit risk studies, graphs have been used to represent borrowers as nodes and their relationships as edges, enabling the aggregation of information from their neighbors \cite{sun2024applyinghybridgraphneural,SUN2025763}. Models with dynamic multilayer networks have also incorporated the evolution of connections and assigned weights to different points in time for default prediction \cite{ZANDI2025586}.
+
+The problem under investigation is whether relationships inferred from behavioral similarity add predictive information to the individual attributes of AMEX customers. The research question is: \textit{does the relational and temporal representation of customers through Graph Neural Networks improve default detection compared with tabular models?} This comparison is necessary because standalone GNNs may provide limited gains over gradient-boosted trees, whereas the combination of tabular attributes and relational embeddings achieved the best result in the study by Yang and Vasistha \cite{yang2026relationalgraphmodelingcredit}.
+
+To answer this question, monthly histories will be condensed into short-, medium-, and long-term representations corresponding to 3-, 6-, and 13-month windows. Each customer will be a node, and edges will be defined by similarity among behavioral attributes without using the default label represented by \texttt{target}. GCN (Graph Convolutional Network), GraphSAGE (Graph Sample and Aggregate), and GAT (Graph Attention Network) will be compared with a LightGBM baseline and a hybrid model that combines tabular attributes with GNN embeddings, following relational, temporal, and hybrid strategies described in the literature \cite{sun2024applyinghybridgraphneural,ZANDI2025586,yang2026relationalgraphmodelingcredit}.
+
+The main objective is to measure the gain of the relational-temporal representation over the tabular baseline. The specific objectives are to compare temporal horizons and GNN architectures, verify the complementarity between tabular attributes and relational embeddings, evaluate probability calibration, and examine the contributions of attributes and neighbors to the predictions. The use of SHAP (SHapley Additive exPlanations) in credit models and relational explainability analyses provides a reference for interpreting the results expected in this study \cite{BITETTO2023101746,yang2025interpretable,yang2026relationalgraphmodelingcredit}. Fig.~\ref{fig:diagram-solution-planning} summarizes the proposed workflow.
+
+\begin{figure}[htbp]
+    \centering
+    \includesvg[width=0.8\linewidth]{assets/diagram-planning.svg}
+    \vspace{-2mm}
+    \caption{Proposed workflow for default prediction using tabular, temporal, and relational representations.}
+    \label{fig:diagram-solution-planning}
+\end{figure}
+
+\section{Materials and Methods}
+\label{sec:materials}
+
+The training portion of the American Express Default Prediction dataset, comprising \texttt{train\_data.csv} and \texttt{train\_labels.csv}, will be used. It contains 5,531,451 monthly records from 458,913 customers, approximately 190 anonymized attributes, and up to 13 records preceding the outcome per \texttt{customer\_ID} \cite{amex-default-prediction}. The competition's public test set will not be used. A customer-stratified split will reserve 20\% for internal testing; 20\% of the 80\% development portion will be used for validation, resulting in a 64\%/16\%/20\% train, validation, and test split. Fig.~\ref{fig:amex-sample} depicts the temporal organization of the data.
+
+\begin{figure}[htbp]
+    \centering
+    \scriptsize
+    \renewcommand{\arraystretch}{1.1}
+    \resizebox{\columnwidth}{!}{%
+    \begin{tabular}{c c c c c c}
+        \toprule
+        \texttt{customer\_ID} & \texttt{S\_2} & \texttt{D\_*} & \texttt{S\_*} & \texttt{P\_*/B\_*/R\_*} & \texttt{target} \\
+        \midrule
+        $c_i$ & $t_1$ & $d_{i,1}$ & $s_{i,1}$ & $x_{i,1}$ & $y_i$ \\
+        $c_i$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $y_i$ \\
+        $c_i$ & $t_{n_i}$ & $d_{i,n_i}$ & $s_{i,n_i}$ & $x_{i,n_i}$ & $y_i$ \\
+        \bottomrule
+    \end{tabular}%
+    }
+    \vspace{0.5mm}
+
+    Monthly records ($n_i \leq 13$) $\rightarrow$ 3M, 6M, and 13M windows $\rightarrow$ customer-level vectors
+    \vspace{-1mm}
+    \caption{Conceptual representation of temporal records and customer-level labels in the AMEX dataset.}
+    \label{fig:amex-sample}
+\end{figure}
+
+Records will be sorted by \texttt{customer\_ID} and \texttt{S\_2}. For numerical attributes, the mean, standard deviation, minimum, maximum, first and last values, total difference, and mean slope will be calculated; for categorical attributes, the last state, number of states, and transitions will be used. These deterministic operations will be repeated over the 3-, 6-, and 13-month windows \cite{shukla2024featureengineering,li2026temporalfeatureengineering,zheng2018feature}. The customer-level split will occur before imputation, normalization, or selection, which will be fitted only on the training set of each experiment.
+
+For each window, customers will be connected to their $k$ nearest neighbors based on normalized attributes without using \texttt{target}. Values of $k\in\{5,10,20\}$ and Euclidean and cosine distances will be compared \cite{SUN2025763}. The k-NN (K-Nearest Neighbors) index will be fitted using training customers only. Validation and test customers will query this index through directed edges from training neighbors to the held-out node; there will be no edges among held-out nodes or messages from them to the training graph. Approximate search will be used when necessary, with storage as a sparse edge list.
+
+The GCN, GraphSAGE, and GAT architectures will be evaluated under the same partitions and tuning budget \cite{sun2024applyinghybridgraphneural,SUN2025763,ZANDI2025586}. After training, the encoder will be frozen, and inference will use the training graph augmented only with the query edges defined above. The representations from the three windows will be combined through concatenation and attention. LightGBM will be the tabular reference model, and the hybrid classifier will receive tabular attributes and GNN representations. To prevent the second stage from being fitted to representations produced using the same labels, it will be trained with out-of-fold GNN representations \cite{zheng2022xgboostlightgbm,zhu2024localensemble,yang2026relationalgraphmodelingcredit}.
+
+The main protocol will be inductive, and the test set will be used only once. The primary metric will be the AMEX Score, calculated according to the official definition: the mean of the normalized Gini coefficient and the rate of positive instances contained in the first 4\% of the weighted mass of observations ordered by prediction, with a weight of 20 for negative instances and 1 for positive instances \cite{amex-default-prediction}. ROC-AUC, PR-AUC, F1 Score, Brier Score, and ECE (Expected Calibration Error) will be secondary metrics; the F1 threshold will be selected on the validation set, and ECE will use ten equal-width bins. Platt calibration will be fitted on the validation set. Ablations and repetitions with different random seeds will be conducted before testing. SHAP will explain the tabular model; neighbors and attention weights will be reported only as descriptive diagnostics \cite{BITETTO2023101746,yang2025interpretable,yang2026relationalgraphmodelingcredit}.
+
+The implementation will use Python, Polars/Pandas, scikit-learn, PyTorch Geometric, LightGBM, SHAP, and FAISS. The team already has initial modules for temporal aggregation, k-NN construction, GAT, and fusion with LightGBM. The available resources are an Apple M1 MacBook Pro and an Apple M1 MacBook Air with 8 GB of memory, without a CUDA GPU. Therefore, tests will begin on pilot samples and use chunked processing, approximate search, sparse graphs, and neighbor sampling. If necessary, batch sizes and the number of simultaneous configurations will be reduced without changing the partitions. Table~\ref{tab:materials_methods} summarizes the execution.
+
+\begin{table*}[!htp]
+\centering
+\renewcommand{\arraystretch}{1.4}
+
+\caption{Summary of materials and methods.}
+\label{tab:materials_methods}
+
+\vspace{-1.5mm}
+
+\resizebox{0.95\textwidth}{!}{%
+\begin{tabular}{p{3cm} p{7cm} p{6cm}}
+\toprule
+\textbf{Materials} & \textbf{Description} & \textbf{Notes} \\
+\midrule
+Dataset & AMEX: monthly history, anonymized attributes, and a customer-level default label \cite{amex-default-prediction}. & Split by \texttt{customer\_ID}; the competition's public test set is not used. \\
+Temporal representation & Statistics and variations calculated over 3M, 6M, and 13M windows \cite{li2026temporalfeatureengineering}. & Transformations fitted only on the training set. \\
+Graph construction & Similarity-based k-NN; sparse edge lists; $k\in\{5,10,20\}$ \cite{SUN2025763}. & No use of \texttt{target}; approximate search when necessary. \\
+Models & LightGBM, GCN, GraphSAGE, GAT, and tabular--GNN fusion \cite{ZANDI2025586,yang2026relationalgraphmodelingcredit}. & Comparison under the same customer split. \\
+Evaluation & AMEX Score, ROC-AUC, PR-AUC, F1, Brier Score, ECE, and ablation studies \cite{amex-default-prediction}. & Selection on training/validation data and final evaluation on the held-out test set. \\
+Language and libraries & Python, Polars/Pandas, scikit-learn, PyTorch Geometric, FAISS, LightGBM/XGBoost, and SHAP \cite{zheng2022xgboostlightgbm,yang2025interpretable}. & Temporal processing, modeling, evaluation, and explainability. \\
+Hardware and resources & Apple M1 MacBook Pro and Apple M1 MacBook Air (8 GB). & Chunked processing, sparse graphs, and neighbor sampling. \\
+Work organization & Data; graphs and models; evaluation and explainability; integration and writing. & Workstreams executed in parallel according to pipeline dependencies. \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+
+\section{Project Stages and Physical Milestones}
+\label{sec:stages}
+
+The stages follow the workflow shown in Fig.~\ref{fig:diagram-solution-planning}. Each physical milestone corresponds to a verifiable artifact, such as an integrity report, attribute matrices, graphs, trained models, or consolidated results. The timing of these activities is presented in Section~\ref{sec:schedule}.
+
+\subsection{Theoretical Foundation and Experimental Protocol}
+
+The state-of-the-art review will define reference models, GNNs, metrics, and explainability methods. The protocol will establish customer-level partitions, fitting restricted to training data, selection on validation data, and one-time use of the test set. Physical milestone: a protocol and experiment matrix associating each hypothesis with a comparison, metric, and analysis criterion.
+
+\subsection{Data Ingestion, Validation, and Preparation}
+
+The files will be checked for schema, missing values, duplicates, target distribution, and temporal order, and converted for chunked processing. The 64\%/16\%/20\% split will not share customers across partitions. Delivery milestone: partitioned data and an integrity report with reproducible counts and no overlap.
+
+\subsection{Temporal Representation and Graph Construction}
+
+Vectors for 3, 6, and 13 months and sparse graph variants for each combination of $k$ and distance will be produced. Validation will select one configuration per horizon; the target will never be used to create edges. Delivery milestone: three attribute matrices, three selected graphs, and connectivity statistics, all loadable without dense matrices or invalid values.
+
+\subsection{Baselines, GNNs, and Hybrid Fusion}
+
+LightGBM, GCN, GraphSAGE, and GAT will first be trained on pilot samples. Concatenation and attention will combine the horizons, and the hybrid model will use out-of-fold GNN representations. Delivery milestone: code, models, hyperparameters, and preliminary results. Completion will require reproducible inductive inference under the same partitions.
+
+\subsection{Inference, Evaluation, and Communication of Results}
+
+After selection and calibration on the validation set, the held-out test set will produce the final evaluation. Prior ablations will examine relationships, horizons, architectures, fusion methods, $k$, and random seeds. SHAP, neighbors, and attention weights will support interpretation without causal attribution. Delivery milestone: metrics, ablations, calibration plots, selected explanations, source code repository \cite{gnnriskcreditcarddefault2026}, and a revised manuscript, completed when the results answer the research question.
+
+\section{Schedule}
+\label{sec:schedule}
+
+The project will be conducted over ten weeks, counted from the submission of this plan to the final delivery on October 31. The timeline is presented in Table~\ref{tab:schedule} and corresponds to the stages and physical milestones defined in Section~\ref{sec:stages}. Implementation, analysis, and writing activities will be carried out in parallel when there are no dependencies among them; furthermore, the course checkpoints will be fulfilled by the artifacts produced at the end of each period.
+
+\begin{table}[!htp]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\caption{Project schedule, from the submission of this plan to the final delivery on October 31.}
+\label{tab:schedule}
+
+\vspace{-1.5mm}
+
+\resizebox{0.99\linewidth}{!}{%
+\begin{tabular}{l c c c c c}
+\toprule
+\textbf{Activity} &
+\makecell[c]{\textbf{Weeks 1--2}} &
+\makecell[c]{\textbf{Weeks 3--4}} &
+\makecell[c]{\textbf{Weeks 5--6}} &
+\makecell[c]{\textbf{Weeks 7--8}} &
+\makecell[c]{\textbf{Weeks 9--10}\\\textbf{(until 10/31)}} \\
+\midrule
+\rowcolor{gray!10} State-of-the-art review & \cmark &   &   &   &   \\
+Dataset processing                                  & \cmark & \cmark &   &   &   \\
+\rowcolor{gray!10} Experiment 1: tabular model and pilot graphs &        & \cmark & \cmark &        &   \\
+\rowcolor{gray!10} Experiment 2: GCN, GraphSAGE, and GAT architectures &        &        & \cmark &        &   \\
+\rowcolor{gray!10} Experiment 3: multiview, hybrid model, and calibration &        &        & \cmark & \cmark   &   \\
+Results analysis and explainability                  &        &        & \cmark & \cmark &   \\
+\rowcolor{gray!10} Manuscript writing               &        &        & \cmark & \cmark & \cmark \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\bibliographystyle{IEEEtran}
+\bibliography{bibtex}
+
+\end{document}
