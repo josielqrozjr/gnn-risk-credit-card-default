@@ -86,6 +86,28 @@ O `customer_ID` será utilizado exclusivamente como identificador e chave relaci
 2. **Uso do target:** O `target` será utilizado exclusivamente na função de perda supervisionada. Jamais será utilizado para calcular similaridade de nós, criar arestas ou induzir topologia.
 3. **Feature Selection e Normalização:** Quaisquer transformações estatísticas serão ajustadas estritamente no fold de treinamento e aplicadas por projeção no teste.
 4. **Protocolo Indutivo:** O pipeline priorizará inferência indutiva para simular a chegada de novos clientes sem reconstrução completa da topologia prévia.
+  
+    4.1. Como a pesquisa pretende avaliar uma configuração capaz de generalizar para clientes não observados, o protocolo principal adotará uma configuração **indutiva**:
+
+    ```text
+    Treino
+      ↓
+    Grafo de treinamento
+      ↓
+    Treinamento da GNN
+      ↓
+    Encoder congelado
+      ↓
+    Novos clientes de teste
+      ↓
+    Construção de relações permitidas pelo protocolo
+      ↓
+    Inferência
+    ```
+
+    Não serão utilizados labels do teste na construção da representação.
+
+    Uma avaliação transdutiva poderá ser realizada apenas como experimento adicional, claramente identificada e separada do resultado principal.
 
 ---
 
@@ -154,6 +176,37 @@ A dimensão temporal mensal de cada cliente será condensada em características
    - **GCN:** baseline de agregação convolucional isotrópica;
    - **GraphSAGE:** amostragem e agregação indutiva eficiente;
    - **GAT:** atribuição de coeficientes de atenção adaptativos às arestas comportamentais.
+
+    Serão avaliadas pelo menos três famílias de GNN.
+
+    #### 1.1 GCN
+
+    A Graph Convolutional Network será utilizada como baseline de convolução em grafos.
+
+    Sua função será investigar se a simples agregação de informação da vizinhança já fornece ganho sobre o modelo tabular.
+
+    #### 1.2 GraphSAGE
+
+    GraphSAGE será utilizado como alternativa baseada em agregação de vizinhos e geração de embeddings para nós, permitindo uma configuração mais compatível com inferência em novos clientes.
+
+    #### 1.3 GAT
+
+    Graph Attention Network será a arquitetura principal candidata.
+
+    A GAT atribui diferentes pesos às relações entre um nó e seus vizinhos, permitindo investigar se algumas relações comportamentais são mais relevantes que outras.
+
+    A comparação permitirá responder:
+
+    ```text
+    GCN
+    ↓
+    GraphSAGE
+    ↓
+    GAT
+    ```
+
+    qual mecanismo representa melhor as relações de risco entre clientes.
+
 2. **Fusão Multivisão:** Concatenação e mecanismo de atenção entre representações das 3 visões temporais ($H_{3M}, H_{6M}, H_{13M}$).
 3. **Modelo Híbrido:** Junção dos embeddings relacionais aprendidos pela GNN aos vetores tabulares originais, submetidos a um classificador Gradient Boosting (LightGBM/XGBoost).
 
