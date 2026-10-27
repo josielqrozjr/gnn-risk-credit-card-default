@@ -227,6 +227,20 @@ def predict_gnn_probabilities(
     return probabilities.cpu().numpy()
 
 
+def extract_gnn_embeddings(
+    model: GraphClassifier,
+    data: Data,
+    query_count: int,
+) -> np.ndarray:
+    """Extract frozen hidden representations for the final query nodes."""
+    if query_count < 1 or query_count > data.x.shape[0]:
+        raise ValueError("query_count must select at least one node in the graph")
+    model.eval()
+    with torch.no_grad():
+        embeddings = model.encode(data)[-query_count:]
+    return embeddings.cpu().numpy()
+
+
 def _canonical_edges(edge_index: torch.Tensor, node_count: int) -> torch.Tensor:
     if edge_index.shape[1] == 0:
         return edge_index

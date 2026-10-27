@@ -96,7 +96,7 @@ This anonymous matrix evaluates repository evidence rather than claiming individ
 | Leakage-safe supervised evaluation | Customer-level stratified split and train-only preprocessing | Available and tested |
 | LightGBM baseline modeling | Training, early stopping, persistence, and feature importance | Available and tested |
 | Metrics and experimental reporting | AMEX Score, discrimination, calibration, logs, and manifests | Available and tested |
-| PyTorch Geometric and GNN modeling | GCN, GraphSAGE, and GAT classifiers with a validation-based full-batch trainer | Gap: integrate and benchmark on the real customer split after the baseline gate |
+| PyTorch Geometric and GNN modeling | GCN, GraphSAGE, and GAT classifiers with an inductive one-view experiment runner | Gap: benchmark the real-data horizons and architectures after the baseline gate |
 | Scalable graph construction | Existing sparse kNN utility without a full-data benchmark | Gap: benchmark FAISS and memory use on a bounded sample |
 | Scientific reporting | Research questions, hypotheses, and planned ablations | Available; measured results remain pending |
 
@@ -291,7 +291,7 @@ GraphSAGE
 GAT
 ```
 
-The repository includes a two-layer `GraphClassifier` supporting GCN, GraphSAGE, and GAT, plus a full-batch trainer that restores the best validation-loss checkpoint and rejects query-to-training message edges. The implementation is covered by optional PyTorch Geometric tests; the real-data multi-view experiment remains to be integrated and benchmarked.
+The repository includes a two-layer `GraphClassifier` supporting GCN, GraphSAGE, and GAT, plus a full-batch trainer that restores the best validation-loss checkpoint and rejects query-to-training message edges. The one-view experiment runner builds a training-only graph, queries validation and test customers independently, and returns their probabilities and frozen embeddings. The implementation is covered by optional PyTorch Geometric tests; the three-horizon orchestration and real-data benchmark remain pending.
 
 ### 8.2 Multiview Fusion
 
@@ -472,6 +472,7 @@ The repository separates reusable source modules from local datasets, experiment
 - `src/evaluation/metrics.py`: implements AMEX Score, ROC-AUC, PR-AUC, F1, Brier Score, and ECE.
 - `src/reporting/artifacts.py`: writes atomic artifacts and SHA-256 manifests.
 - `src/mvp/pipeline.py` and `src/mvp/run.py`: provide orchestration and the command-line entry point.
+- `src/experiments/gnn.py`: runs an inductive GNN experiment for a single temporal feature view and produces held-out probabilities and embeddings.
 - `src/graph/knn_graph.py`: validates feature matrices and builds sparse directed k-NN edge indices with scikit-learn or FAISS.
 - `src/models/gat.py`: provides a two-layer PyTorch Geometric GAT classifier for node-level prediction.
 - `src/models/gnn.py`: implements GCN, GraphSAGE, and GAT classifiers, validation-based early stopping, and inductive query prediction.

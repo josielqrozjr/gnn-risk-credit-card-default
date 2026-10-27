@@ -5,6 +5,7 @@ pytest.importorskip("torch_geometric")
 
 from torch_geometric.data import Data
 
+from src.experiments.gnn import run_inductive_gnn_experiment
 from src.models.gnn import (
     GraphClassifier,
     fit_gnn_classifier,
@@ -65,3 +66,32 @@ def test_gnn_training_rejects_query_to_training_edges():
             torch.tensor([1]),
             max_epochs=1,
         )
+
+
+def test_inductive_experiment_uses_training_only_neighbors():
+    train_features = torch.tensor(
+        [[float(index), float(index % 3)] for index in range(8)]
+    ).numpy()
+    validation_features = torch.tensor([[2.5, 1.0], [5.5, 2.0]]).numpy()
+    test_features = torch.tensor([[1.5, 0.0], [6.5, 1.0]]).numpy()
+
+    result = run_inductive_gnn_experiment(
+        train_features,
+        torch.tensor([0, 1, 0, 1, 0, 1, 0, 1]).numpy(),
+        validation_features,
+        torch.tensor([0, 1]).numpy(),
+        test_features,
+        architecture="graphsage",
+        k=2,
+        hidden_channels=4,
+        max_epochs=2,
+        patience=2,
+    )
+
+    assert result.training_edge_count == 16
+    assert result.validation_edge_count == 4
+    assert result.test_edge_count == 4
+    assert result.validation_probabilities.shape == (2,)
+    assert result.test_probabilities.shape == (2,)
+    assert result.validation_embeddings.shape[0] == 2
+    assert result.test_embeddings.shape[0] == 2
