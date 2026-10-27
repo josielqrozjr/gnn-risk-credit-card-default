@@ -245,7 +245,7 @@ Each customer's monthly temporal dimension will be condensed into static and dyn
 - Trends and slopes: `total_delta` = $X_{\mathrm{last}} - X_{\mathrm{first}}$, and `avg_monthly_slope` = $\frac{X_{\mathrm{last}} - X_{\mathrm{first}}}{n - 1}$.
 - Volatility and categorical-state dynamics, including the number of transitions and the last state.
 
-The implemented `aggregate_temporal_features` utility computes mean, standard deviation, minimum, maximum, last value, and first-to-last difference for numerical attributes. It also retains the latest categorical state. Explicit 3M/6M/13M orchestration and categorical transition counts remain planned extensions.
+The implemented `aggregate_temporal_features` utility preserves the MVP's full-history schema by default and can independently derive trailing-window statistics for any positive month horizons. Windowed numeric features include mean, standard deviation, minimum, maximum, first/last values, total difference, and average slope; categorical features include the latest state, number of observed states, and within-window transitions. The experiment runner still needs to orchestrate 3M/6M/13M model comparisons.
 
 ## 7. Behavioral Graph Construction and Scalability
 
@@ -257,7 +257,7 @@ The implemented `aggregate_temporal_features` utility computes mean, standard de
   - Sparse edge-list storage through `torch_geometric.data.Data(edge_index=...)`, without materializing dense adjacency matrices.
   - Mini-batching through neighbor sampling with `NeighborLoader`.
 
-The current `build_knn_edge_index` implementation constructs a sparse directed edge list using scikit-learn or FAISS, validates finite two-dimensional inputs, and can include or exclude self-loops. Approximate indexing, cosine distance, explicit train-to-held-out queries, and graph-validation utilities remain planned extensions.
+The `build_knn_edge_index` utility constructs a sparse directed graph over a training sample using scikit-learn or FAISS. `build_inductive_knn_edge_index` fits neighbor search on training features only and creates directed training-to-query edges for held-out customers, with query-node indices offset for appending to the training graph. Both utilities reject non-finite inputs; approximate indexing, cosine distance, and broader graph-integrity diagnostics remain planned extensions.
 
 ## 8. Models, Multiview Fusion, and Hybrid Approach
 

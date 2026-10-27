@@ -42,6 +42,47 @@ def test_temporal_aggregation_is_sorted_and_complete():
     }
 
 
+def test_temporal_aggregation_builds_trailing_window_views():
+    raw = pl.DataFrame(
+        {
+            "customer_ID": ["a"] * 4,
+            "S_2": [1, 2, 3, 4],
+            "value": [1.0, 3.0, 7.0, 9.0],
+            "category": ["x", "x", "y", "y"],
+        }
+    )
+
+    result = aggregate_temporal_features(
+        raw,
+        "customer_ID",
+        "S_2",
+        ["value"],
+        ["category"],
+        windows=(2, 4),
+    )
+    row = result.iloc[0]
+
+    assert row["value_mean_2m"] == pytest.approx(8.0)
+    assert row["value_diff_2m"] == pytest.approx(2.0)
+    assert row["value_slope_2m"] == pytest.approx(2.0)
+    assert row["category_n_states_2m"] == 1
+    assert row["category_transitions_2m"] == 0
+    assert row["value_mean_4m"] == pytest.approx(5.0)
+    assert row["value_slope_4m"] == pytest.approx(8 / 3)
+    assert row["category_n_states_4m"] == 2
+    assert row["category_transitions_4m"] == 1
+
+
+@pytest.mark.parametrize("windows", [(0,), (-1,), (2, 2), (1.5,)])
+def test_temporal_aggregation_rejects_invalid_windows(windows):
+    raw = pl.DataFrame(
+        {"customer_ID": ["a"], "S_2": [1], "value": [1.0]}
+    )
+
+    with pytest.raises(ValueError, match="windows"):
+        aggregate_temporal_features(raw, "customer_ID", "S_2", ["value"], windows=windows)
+
+
 def test_preprocessor_uses_training_contract_and_handles_unknowns(tmp_path):
     train = pd.DataFrame(
         {
