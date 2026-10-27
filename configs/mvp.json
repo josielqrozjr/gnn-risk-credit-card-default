@@ -1,7 +1,7 @@
 {
   "data": {
     "features_glob": "data/parquet/raw/data_*.parquet",
-    "labels_path": "data/parquet/raw/train_labels.parquet",
+    "labels_path": "data/parquet/raw/train_labels",
     "id_column": "customer_ID",
     "time_column": "S_2",
     "target_column": "target",

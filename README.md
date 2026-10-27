@@ -23,6 +23,7 @@ The central hypothesis is that **customer relational structure, combined with te
 The current MVP is a reproducible **LightGBM tabular baseline**. It intentionally uses a small scope before graph experiments begin:
 
 - lazy validation of partitioned Parquet features;
+- loading and validation of customer labels from a Parquet file, CSV file, or partitioned Parquet directory;
 - a deterministic sample capped at 10,000 customers;
 - customer-disjoint and target-stratified train, validation, and test splits of 64%, 16%, and 20%;
 - one complete-history temporal representation;
@@ -37,7 +38,7 @@ GNN training, graph construction, multiview features, hybrid fusion, calibration
 
 ### 0.2 Current Execution Status
 
-The local feature data was validated on September 5, 2026.
+The feature data was validated on September 5, 2026. Customer-level labels have since been added to the workspace as four Parquet partitions; their schema, coverage, and distribution still need to be verified by a real pipeline run.
 
 | Assessment | Observed status |
 |---|---|
@@ -46,12 +47,12 @@ The local feature data was validated on September 5, 2026.
 | Customers | 458,913 unique customers |
 | Coverage | March 1, 2017 through March 31, 2018 |
 | Schema | 190 columns: `customer_ID`, `S_2`, and 188 model attributes |
-| Labels | Blocked: neither feature partition contains `target`, and no separate label file is present |
+| Labels | Present in `data/parquet/raw/train_labels/` as four Parquet partitions; pipeline validation pending |
 | Hardware | Apple M1, 8 CPU cores, 8 GB RAM, approximately 22 GB free disk during preflight |
-| Real AMEX baseline | Pending the customer-level label file |
+| Real AMEX baseline | Pending the first run with the supplied customer-level labels |
 | Synthetic smoke run | Passed end to end; used only to validate implementation |
 
-The expected label location is `data/parquet/raw/train_labels.parquet`, with one `customer_ID` and one binary `target` per row. CSV labels are also supported by changing `labels_path` in the configuration. The pipeline fails before training when this contract is not satisfied and preserves a diagnostic evidence package.
+The configured label location is `data/parquet/raw/train_labels/`, containing partitioned Parquet data with one `customer_ID` and one binary `target` per customer. A single Parquet or CSV file is also supported by changing `labels_path` in the configuration. The pipeline validates the label contract before training and preserves a diagnostic evidence package on failure.
 
 Synthetic smoke metrics must not be reported as AMEX baseline results. They are deliberately separable from the real-data artifacts and exist only to prove that every pipeline stage executes:
 
@@ -76,7 +77,7 @@ python3.13 -m venv .venv
 .venv/bin/python -m src.mvp.run --config configs/mvp.json
 ```
 
-The last command currently exits with code `2` because the labels are absent. After the label path is corrected, the same command trains and evaluates the real 10,000-customer baseline.
+The last command is configured to read the supplied partitioned labels and train the real 10,000-customer baseline. Its real-data metrics remain pending until the run completes and is checked.
 
 Tracked evidence:
 
@@ -99,9 +100,9 @@ This anonymous matrix evaluates repository evidence rather than claiming individ
 | Scalable graph construction | Existing sparse kNN utility without a full-data benchmark | Gap: benchmark FAISS and memory use on a bounded sample |
 | Scientific reporting | Research questions, hypotheses, and planned ablations | Available; measured results remain pending |
 
-The timeline remains feasible for a focused project if labels are supplied before graph work begins. The next delivery gates are:
+The next delivery gates are:
 
-1. **Baseline gate:** add labels, pass the real 10,000-customer run, and review its metrics and resource profile.
+1. **Baseline gate:** validate the supplied labels, pass the real 10,000-customer run, and review its metrics and resource profile.
 2. **Graph gate:** build and validate one normalized kNN graph on the same customer sample without target leakage.
 3. **GNN gate:** compare one GAT configuration against the frozen LightGBM split and metrics.
 4. **Extension gate:** attempt hybrid fusion or larger samples only if memory, runtime, and baseline quality remain acceptable.
@@ -143,7 +144,7 @@ With 8 GB RAM, a full 458,913-customer wide aggregation and graph should not be 
 
 ## 3. Dataset
 
-The study uses only the training portion of the **American Express Default Prediction** competition. In the current workspace, the feature table is stored as `data/parquet/raw/data_0.parquet` and `data/parquet/raw/data_1.parquet`. Customer-level labels must be supplied separately as Parquet or CSV. The competition's public test set will not be used to evaluate this study.
+The study uses only the training portion of the **American Express Default Prediction** competition. In the current workspace, the feature table is stored as `data/parquet/raw/data_0.parquet` and `data/parquet/raw/data_1.parquet`, and customer-level labels are supplied separately in the partitioned Parquet directory `data/parquet/raw/train_labels/`. The competition's public test set will not be used to evaluate this study.
 
 The experimental dataset contains approximately:
 
@@ -504,7 +505,7 @@ The markers below distinguish the current filesystem from the intended architect
 │   │   └── raw/                                    [existing, local]
 │   │       ├── data_0.parquet                      [existing, local]
 │   │       ├── data_1.parquet                      [existing, local]
-│   │       └── train_labels.parquet                [required, currently missing]
+│   │       └── train_labels/                       [existing, four local Parquet partitions]
 │   ├── temporal/                                   [planned, local]
 │   ├── customer_features/                          [planned, local]
 │   └── graphs/                                     [planned, local]
