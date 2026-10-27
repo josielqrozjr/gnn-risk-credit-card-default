@@ -64,6 +64,45 @@ def build_knn_edge_index(
     return np.vstack([src_nodes_list, dst_nodes_list]).astype(np.int64)
 
 
+def build_inductive_knn_edge_index(
+    train_features: np.ndarray,
+    query_features: np.ndarray,
+    k: int = 10,
+    use_faiss: bool = False,
+) -> np.ndarray:
+    """Connect held-out query nodes to a training-only neighbor index.
+
+    The returned PyG edge index contains edges from training nodes to query nodes.
+    Query node indices are offset by the number of training nodes so the result
+    can be appended to the training edge index.
+    """
+    if train_features.ndim != 2 or query_features.ndim != 2:
+        raise ValueError("train_features and query_features must be 2D arrays")
+    if train_features.shape[1] == 0:
+        raise ValueError("feature matrices must contain at least one feature")
+    if train_features.shape[1] != query_features.shape[1]:
+        raise ValueError("train and query features must have the same number of columns")
+    if not np.isfinite(train_features).all() or not np.isfinite(query_features).all():
+        raise ValueError("features must only contain finite values")
+    if k < 1:
+        raise ValueError("k must be >= 1")
+    if query_features.shape[0] == 0:
+        return np.empty((2, 0), dtype=np.int64)
+    if train_features.shape[0] == 0:
+        raise ValueError("at least one training node is required for query nodes")
+
+    neighbor_count = min(k, train_features.shape[0])
+    indices = _search_query_neighbors(
+        train_features, query_features, neighbor_count, use_faiss
+    )
+    train_nodes = indices.reshape(-1)
+    query_nodes = np.repeat(
+        np.arange(query_features.shape[0], dtype=np.int64) + train_features.shape[0],
+        neighbor_count,
+    )
+    return np.vstack([train_nodes, query_nodes])
+
+
 def _search_neighbors(features: np.ndarray, neighbor_count: int, use_faiss: bool) -> np.ndarray:
     if use_faiss:
         try:
@@ -86,4 +125,29 @@ def _knn_with_sklearn(features: np.ndarray, neighbor_count: int) -> np.ndarray:
     model = NearestNeighbors(n_neighbors=neighbor_count, metric="euclidean")
     model.fit(features)
     _, indices = model.kneighbors(features)
+    return indices
+
+
+def _search_query_neighbors(
+    train_features: np.ndarray,
+    query_features: np.ndarray,
+    neighbor_count: int,
+    use_faiss: bool,
+) -> np.ndarray:
+    if use_faiss:
+        try:
+            import faiss
+
+            index_features = np.ascontiguousarray(train_features, dtype=np.float32)
+            query_features_f32 = np.ascontiguousarray(query_features, dtype=np.float32)
+            index = faiss.IndexFlatL2(index_features.shape[1])
+            index.add(index_features)
+            _, indices = index.search(query_features_f32, neighbor_count)
+            return indices
+        except ImportError:
+            pass
+
+    model = NearestNeighbors(n_neighbors=neighbor_count, metric="euclidean")
+    model.fit(train_features)
+    _, indices = model.kneighbors(query_features)
     return indices

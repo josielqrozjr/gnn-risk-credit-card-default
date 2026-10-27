@@ -221,9 +221,9 @@ __marimo__/
 .DS_Store
 
 # Project data and outputs
-data/
-experiments/
-results/
+/data/
+/experiments/
+/results/
 
 # Only lightweight, sanitized MVP evidence is tracked.
 artifacts/*

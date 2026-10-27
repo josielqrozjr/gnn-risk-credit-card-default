@@ -52,6 +52,31 @@ def test_repository_validates_and_profiles_partitions(tmp_path):
     assert profile["target_distribution"] == {"0": 2, "1": 2}
 
 
+def test_repository_loads_partitioned_label_directory(tmp_path):
+    _write_dataset(tmp_path)
+    labels_dir = tmp_path / "label_partitions"
+    labels_dir.mkdir()
+    pl.DataFrame(
+        {"customer_ID": ["c0", "c1"], "target": [0, 1]}
+    ).write_parquet(labels_dir / "data_0.parquet")
+    pl.DataFrame(
+        {"customer_ID": ["c2", "c3"], "target": [0, 1]}
+    ).write_parquet(labels_dir / "data_1.parquet")
+    repository = ParquetDatasetRepository(
+        str(tmp_path / "data_*.parquet"),
+        str(labels_dir),
+        "customer_ID",
+        "S_2",
+        "target",
+    )
+
+    labels = repository.load_labels()
+
+    assert labels.height == 4
+    assert labels["customer_ID"].to_list() == ["c0", "c1", "c2", "c3"]
+    assert labels["target"].to_list() == [0, 1, 0, 1]
+
+
 def test_repository_rejects_duplicate_labels(tmp_path):
     _write_dataset(tmp_path)
     pl.DataFrame(
