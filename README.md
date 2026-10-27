@@ -96,7 +96,7 @@ This anonymous matrix evaluates repository evidence rather than claiming individ
 | Leakage-safe supervised evaluation | Customer-level stratified split and train-only preprocessing | Available and tested |
 | LightGBM baseline modeling | Training, early stopping, persistence, and feature importance | Available and tested |
 | Metrics and experimental reporting | AMEX Score, discrimination, calibration, logs, and manifests | Available and tested |
-| PyTorch Geometric and GNN modeling | Existing starter GAT module without an integrated training run | Gap: begin only after the tabular baseline passes on real labels |
+| PyTorch Geometric and GNN modeling | GCN, GraphSAGE, and GAT classifiers with a validation-based full-batch trainer | Gap: integrate and benchmark on the real customer split after the baseline gate |
 | Scalable graph construction | Existing sparse kNN utility without a full-data benchmark | Gap: benchmark FAISS and memory use on a bounded sample |
 | Scientific reporting | Research questions, hypotheses, and planned ablations | Available; measured results remain pending |
 
@@ -257,7 +257,7 @@ The implemented `aggregate_temporal_features` utility preserves the MVP's full-h
   - Sparse edge-list storage through `torch_geometric.data.Data(edge_index=...)`, without materializing dense adjacency matrices.
   - Mini-batching through neighbor sampling with `NeighborLoader`.
 
-The `build_knn_edge_index` utility constructs a sparse directed graph over a training sample using scikit-learn or FAISS. `build_inductive_knn_edge_index` fits neighbor search on training features only and creates directed training-to-query edges for held-out customers, with query-node indices offset for appending to the training graph. Both utilities reject non-finite inputs; approximate indexing, cosine distance, and broader graph-integrity diagnostics remain planned extensions.
+The `GraphFeatureScaler` fits standardization on training nodes and applies the fixed transform to held-out nodes. The `build_knn_edge_index` utility constructs a sparse directed graph over a training sample using scikit-learn or FAISS. `build_inductive_knn_edge_index` fits neighbor search on training features only and creates directed training-to-query edges for held-out customers, with query-node indices offset for appending to the training graph. Both utilities reject non-finite inputs; approximate indexing, cosine distance, and broader graph-integrity diagnostics remain planned extensions.
 
 ## 8. Models, Multiview Fusion, and Hybrid Approach
 
@@ -291,7 +291,7 @@ GraphSAGE
 GAT
 ```
 
-The repository currently includes a two-layer `GATClassifier` for node-level prediction. GCN and GraphSAGE implementations remain planned.
+The repository includes a two-layer `GraphClassifier` supporting GCN, GraphSAGE, and GAT, plus a full-batch trainer that restores the best validation-loss checkpoint and rejects query-to-training message edges. The implementation is covered by optional PyTorch Geometric tests; the real-data multi-view experiment remains to be integrated and benchmarked.
 
 ### 8.2 Multiview Fusion
 
@@ -466,6 +466,7 @@ The repository separates reusable source modules from local datasets, experiment
 - `src/data/parquet_dataset.py`: validates feature partitions and customer-level labels, profiles the dataset, and loads selected customers.
 - `src/preprocessing/splitting.py`: creates deterministic, stratified, customer-disjoint partitions.
 - `src/preprocessing/transformations.py`: learns imputations, feature filtering, and categorical mappings from training data only.
+- `src/preprocessing/graph_scaling.py`: fits graph-feature standardization on training nodes and reuses it for query nodes.
 - `src/temporal_features/aggregation.py`: aggregates customer histories into numerical statistics and latest categorical states.
 - `src/models/lightgbm_baseline.py`: trains, evaluates, and saves the MVP baseline.
 - `src/evaluation/metrics.py`: implements AMEX Score, ROC-AUC, PR-AUC, F1, Brier Score, and ECE.
@@ -473,6 +474,7 @@ The repository separates reusable source modules from local datasets, experiment
 - `src/mvp/pipeline.py` and `src/mvp/run.py`: provide orchestration and the command-line entry point.
 - `src/graph/knn_graph.py`: validates feature matrices and builds sparse directed k-NN edge indices with scikit-learn or FAISS.
 - `src/models/gat.py`: provides a two-layer PyTorch Geometric GAT classifier for node-level prediction.
+- `src/models/gnn.py`: implements GCN, GraphSAGE, and GAT classifiers, validation-based early stopping, and inductive query prediction.
 - `src/models/hybrid.py`: concatenates tabular features with GNN embeddings and trains a LightGBM classifier.
 - `tests/`: covers configuration, schemas, splitting, temporal aggregation, preprocessing, metrics, privacy, artifact integrity, and the end-to-end CLI.
 - `requirements.txt`: pins the tabular MVP runtime; `requirements-gnn.txt` contains optional future graph dependencies.
