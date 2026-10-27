@@ -222,8 +222,8 @@ __marimo__/
 
 # Project data and outputs
 /data/
-experiments/
-results/
+/experiments/
+/results/
 
 # Only lightweight, sanitized MVP evidence is tracked.
 artifacts/*
