@@ -1,0 +1,14 @@
+{
+  "files": [
+    {
+      "bytes": 7276,
+      "path": "metrics.json",
+      "sha256": "e46285f1b326bbf1053ea06a2a816e0cd5d7329bc13676cab48ca8247269e210"
+    }
+  ],
+  "generated_at_utc": "2026-11-07T22:14:31.546511+00:00",
+  "run": {
+    "command": "python -m scripts.run_real_experiments",
+    "seed": 42
+  }
+}

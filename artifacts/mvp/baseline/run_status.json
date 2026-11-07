@@ -1,10 +1,13 @@
 {
-  "error": "Customer labels are required but were not found at data/parquet/raw/train_labels.parquet. Add the AMEX train_labels file as Parquet.",
-  "error_type": "DatasetContractError",
-  "peak_rss_bytes": 1318944768,
+  "peak_rss_bytes": 2540011520,
   "stage_seconds": {
-    "validate_and_profile_data": 0.7364972079813015
+    "aggregate_temporal_features": 11.065682208165526,
+    "evaluate_and_save": 0.037320374976843596,
+    "preprocess_features": 0.8360957079567015,
+    "sample_and_split_customers": 0.38359804218634963,
+    "train_lightgbm": 7.434604417067021,
+    "validate_and_profile_data": 1.2706582080572844
   },
-  "status": "failed",
-  "total_seconds": 0.7406427079986315
+  "status": "success",
+  "total_seconds": 21.032935000024736
 }
