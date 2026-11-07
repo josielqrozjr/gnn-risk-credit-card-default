@@ -1,6 +1,6 @@
 {
   "cpu_model": "Apple M1",
-  "disk_free_bytes": 23131869184,
+  "disk_free_bytes": 37094211584,
   "logical_cpus": 8,
   "machine": "arm64",
   "packages": {

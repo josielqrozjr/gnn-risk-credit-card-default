@@ -42,17 +42,17 @@ The feature data was validated on September 5, 2026. Customer-level labels have 
 
 | Assessment | Observed status |
 |---|---|
-| Data accessibility | Two local Parquet partitions totaling 6,641,132,041 bytes; sustained reads were not completed in the current environment |
+| Data accessibility | Two readable Parquet partitions totaling 6,641,132,041 bytes |
 | Records | 5,531,451 monthly records |
 | Customers | 458,913 unique customers |
 | Coverage | March 1, 2017 through March 31, 2018 |
 | Schema | 190 columns: `customer_ID`, `S_2`, and 188 model attributes |
 | Labels | Four Parquet partitions validated: 458,913 customers, 340,085 negatives and 118,828 positives |
 | Hardware | Apple M1, 8 CPU cores, 8 GB RAM; feature partitions are about 3.1 GB each |
-| Real AMEX baseline | Blocked before profiling completed because the local feature partitions could not be read to completion |
+| Real AMEX baseline | Completed on a deterministic 10,000-customer sample |
 | Synthetic smoke run | Passed end to end; used only to validate implementation |
 
-The configured label location is `data/parquet/raw/train_labels/`, containing partitioned Parquet data with one `customer_ID` and one binary `target` per customer. A single Parquet or CSV file is also supported by changing `labels_path` in the configuration. The pipeline validates the label contract before training and preserves a diagnostic evidence package on failure.
+The configured label location is `data/raw/parquet/train_labels/`, containing partitioned Parquet data with one `customer_ID` and one binary `target` per customer. A single Parquet or CSV file is also supported by changing `labels_path` in the configuration. The pipeline validates the label contract before training and preserves a diagnostic evidence package on failure.
 
 Synthetic smoke metrics must not be reported as AMEX baseline results. They are deliberately separable from the real-data artifacts and exist only to prove that every pipeline stage executes:
 
@@ -77,7 +77,45 @@ python3.13 -m venv .venv
 .venv/bin/python -m src.mvp.run --config configs/mvp.json
 ```
 
-The last command is configured to read the supplied partitioned labels and train the real 10,000-customer baseline. The labels are already validated; the run still requires both feature partitions to be available for sustained local Parquet reads.
+The last command reads the supplied partitioned labels and trains the real 10,000-customer baseline. The experimental matrix can be run with:
+
+```bash
+python3 -m scripts.run_real_experiments \
+  --features-glob 'data/raw/parquet/data_*.parquet' \
+  --labels-path data/raw/parquet/train_labels \
+  --output artifacts/mvp/gnn/metrics.json
+```
+
+The GNN runner evaluates 3M, 6M, and 13M temporal windows with GCN, GraphSAGE, and GAT under the same customer-disjoint inductive protocol.
+
+### 0.4 Real-data results
+
+The real-data run used 10,000 customers with a fixed seed of 42, split into
+6,400 training, 1,600 validation, and 2,000 test customers. The held-out
+test metrics were:
+
+| Model/view | AMEX Score | ROC-AUC | PR-AUC | Brier | ECE |
+|---|---:|---:|---:|---:|---:|
+| LightGBM, complete history | 0.7427 | 0.9522 | 0.8755 | 0.0770 | 0.0314 |
+| Hybrid LightGBM + GraphSAGE, 13M | 0.7403 | 0.9525 | **0.8781** | **0.0748** | **0.0244** |
+| GCN, 3M | 0.6807 | 0.9182 | 0.8136 | 0.0946 | 0.0343 |
+| GraphSAGE, 3M | 0.7253 | 0.9406 | 0.8524 | 0.0858 | 0.0259 |
+| GAT, 3M | 0.6779 | 0.9212 | 0.8115 | 0.1294 | 0.1166 |
+| GCN, 6M | 0.5881 | 0.8942 | 0.7488 | 0.1114 | 0.0252 |
+| GraphSAGE, 6M | 0.7097 | 0.9404 | 0.8449 | 0.0866 | 0.0255 |
+| GAT, 6M | 0.6596 | 0.9097 | 0.8117 | 0.1239 | 0.1123 |
+| GCN, 13M | 0.6366 | 0.9089 | 0.7784 | 0.1058 | 0.0423 |
+| GraphSAGE, 13M | **0.7321** | **0.9436** | **0.8569** | **0.0851** | 0.0331 |
+| GAT, 13M | 0.6253 | 0.9044 | 0.7866 | 0.1209 | 0.0980 |
+
+These are bounded-sample results, not full-dataset claims. On this protocol,
+the tabular baseline remains slightly stronger by AMEX Score than the
+standalone GNNs and the exploratory hybrid. GraphSAGE with the 13-month view
+is the strongest standalone GNN configuration. The hybrid result is a
+second-stage analysis using in-sample training embeddings; an out-of-fold
+variant is required before treating it as the definitive hybrid conclusion.
+The complete machine-readable result is stored in
+`artifacts/mvp/gnn/metrics.json`.
 
 Tracked evidence:
 
@@ -86,7 +124,7 @@ Tracked evidence:
 
 Raw data, row-level predictions, customer identifiers, processed matrices, and large experiment outputs are never included in these artifact packages.
 
-### 0.4 Skills and Feasibility Assessment
+### 0.5 Skills and Feasibility Assessment
 
 This anonymous matrix evaluates repository evidence rather than claiming individual credentials.
 
@@ -96,15 +134,15 @@ This anonymous matrix evaluates repository evidence rather than claiming individ
 | Leakage-safe supervised evaluation | Customer-level stratified split and train-only preprocessing | Available and tested |
 | LightGBM baseline modeling | Training, early stopping, persistence, and feature importance | Available and tested |
 | Metrics and experimental reporting | AMEX Score, discrimination, calibration, logs, and manifests | Available and tested |
-| PyTorch Geometric and GNN modeling | GCN, GraphSAGE, and GAT classifiers with an inductive one-view experiment runner | Gap: benchmark the real-data horizons and architectures after the baseline gate |
+| PyTorch Geometric and GNN modeling | GCN, GraphSAGE, and GAT classifiers with a real-data multiview experiment runner | Results are recorded in `artifacts/mvp/gnn/metrics.json` |
 | Scalable graph construction | Existing sparse kNN utility without a full-data benchmark | Gap: benchmark FAISS and memory use on a bounded sample |
 | Scientific reporting | Research questions, hypotheses, and planned ablations | Available; measured results remain pending |
 
 The next delivery gates are:
 
-1. **Baseline gate:** make both feature partitions readable locally, pass the real 10,000-customer run, and review its metrics and resource profile.
-2. **Graph gate:** build and validate one normalized kNN graph on the same customer sample without target leakage.
-3. **GNN gate:** compare one GAT configuration against the frozen LightGBM split and metrics.
+1. **Baseline gate:** completed; real metrics and resource profile are recorded in `artifacts/mvp/baseline/`.
+2. **Graph gate:** completed by the inductive runner using normalized training-only kNN graphs.
+3. **GNN gate:** completed for the three horizons and three supported architectures.
 4. **Extension gate:** attempt hybrid fusion or larger samples only if memory, runtime, and baseline quality remain acceptable.
 
 With 8 GB RAM, a full 458,913-customer wide aggregation and graph should not be the default local experiment. The 10,000-customer cap is a deliberate reliability constraint and can be increased through configuration after resource measurements.
@@ -144,7 +182,7 @@ With 8 GB RAM, a full 458,913-customer wide aggregation and graph should not be 
 
 ## 3. Dataset
 
-The study uses only the training portion of the **American Express Default Prediction** competition. In the current workspace, the feature table is stored as `data/parquet/raw/data_0.parquet` and `data/parquet/raw/data_1.parquet`, and customer-level labels are supplied separately in the partitioned Parquet directory `data/parquet/raw/train_labels/`. The competition's public test set will not be used to evaluate this study.
+The study uses only the training portion of the **American Express Default Prediction** competition. In the current workspace, the feature table is stored as `data/raw/parquet/data_0.parquet` and `data/raw/parquet/data_1.parquet`, and customer-level labels are supplied separately in the partitioned Parquet directory `data/raw/parquet/train_labels/`. The competition's public test set will not be used to evaluate this study.
 
 The experimental dataset contains approximately:
 

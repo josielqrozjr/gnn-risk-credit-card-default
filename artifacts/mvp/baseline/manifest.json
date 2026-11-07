@@ -1,32 +1,57 @@
 {
   "files": [
     {
-      "bytes": 589,
+      "bytes": 581,
       "path": "config.json",
-      "sha256": "44fc064e6673a881968e9169d434291772d6a46c2b1cd30336ee32ed02be4993"
+      "sha256": "364db58cfbaac7d1f02471a51c2c621baa1ff0df1a430af390656ec07e41c11f"
     },
     {
-      "bytes": 326,
+      "bytes": 419,
       "path": "data_profile.json",
-      "sha256": "e461f81596163194cc7e767751e3af7a5e666424dea48829ab5e451cfc1ad149"
+      "sha256": "a969bd739ee340bd6a92568c9a601a7c121b59db7b6da01d49889831e36f0dcd"
     },
     {
       "bytes": 467,
       "path": "environment.json",
-      "sha256": "775999202a5948d15fc6408c4fac7caa1121e04f07c50e11a0eb182dc9a957d8"
+      "sha256": "9e6f86c83b950f8193e8f775d17d1fa4c4b0204a5731555b6416f55772f60818"
     },
     {
-      "bytes": 932,
+      "bytes": 1034,
       "path": "execution.log",
-      "sha256": "1973b5818b5744be79c9ba683fcb26a485dde9a90e689ff4e1d908868f110df6"
+      "sha256": "592b66c67dc1c23422d01f733a0ecc1bab3ce15099ce68c4de1ceff15c2f988c"
     },
     {
-      "bytes": 361,
+      "bytes": 26374,
+      "path": "feature_importance.csv",
+      "sha256": "1cf6971bd0f8d45a68acaa9b3fbee3a8a5cef9b47f039f5994544a1dab289259"
+    },
+    {
+      "bytes": 333,
+      "path": "metrics.json",
+      "sha256": "648a3b0fc6e40da80d9e13f12b29c266dc27552b1596d86c83651a31d5e36cc6"
+    },
+    {
+      "bytes": 490832,
+      "path": "model.txt",
+      "sha256": "199cf54f38e6b9e603be31b5654c037f30b041ce2b4cf9021d6bf9d8e3181164"
+    },
+    {
+      "bytes": 27045,
+      "path": "preprocessor.joblib",
+      "sha256": "90dd8bf189b5fb1566172f35c78952ecb88600ebda465d3ea4836296c7551135"
+    },
+    {
+      "bytes": 420,
       "path": "run_status.json",
-      "sha256": "6eff748967978632872871533b1a61d950d3be20b4eef92a90e32f9abf043c90"
+      "sha256": "8f5d2d77759ce87447295f3c7bf579d3a22427ec6e8eb88075f09c6810814eb4"
+    },
+    {
+      "bytes": 257,
+      "path": "split_summary.json",
+      "sha256": "c5b854dc454ac2e8ee56e6605359aaf959a418c187cffccb59f13f5fb9d136ca"
     }
   ],
-  "generated_at_utc": "2026-09-06T02:07:51.353697+00:00",
+  "generated_at_utc": "2026-11-07T22:03:34.808684+00:00",
   "run": {
     "command": "python -m src.mvp.run --config configs/mvp.json",
     "seed": 42

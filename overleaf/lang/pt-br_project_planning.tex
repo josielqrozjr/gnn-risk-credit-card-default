@@ -183,6 +183,25 @@ Análise dos resultados e explicabilidade            &        &        & \cmark 
 }
 \end{table}
 
+\section{Resultados com Dados Reais em Amostra Controlada}
+\label{sec:results}
+
+O protocolo executável foi avaliado em uma amostra determinística de 10.000
+clientes, dividida em 6.400 clientes para treinamento, 1.600 para validação e
+2.000 para teste. O baseline LightGBM com o histórico completo obteve AMEX
+Score de 0,7427, ROC-AUC de 0,9522 e PR-AUC de 0,8755. Entre as configurações
+GNN isoladas, GraphSAGE com a representação de 13 meses foi a mais forte,
+com AMEX Score de 0,7321, ROC-AUC de 0,9436 e PR-AUC de 0,8569. O híbrido
+exploratório, que combina esse embedding com as características tabulares,
+obteve AMEX Score de 0,7403, ROC-AUC de 0,9525 e PR-AUC de 0,8781.
+
+Esses resultados confirmam a viabilidade da implementação indutiva, mas não
+demonstram superioridade sobre o baseline tabular. Eles são resultados de uma
+amostra controlada e não devem ser generalizados para todos os clientes sem
+uma execução maior. Além disso, o híbrido utiliza embeddings de treinamento
+gerados com ajuste sobre os próprios dados; ainda é necessário executar uma
+segunda etapa com representações out-of-fold para uma conclusão definitiva.
+
 \bibliographystyle{IEEEtran}
 \bibliography{bibtex}
 

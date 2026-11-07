@@ -1,12 +1,14 @@
-2026-09-05 23:07:50,565 INFO Starting the LightGBM MVP pipeline
-2026-09-05 23:07:50,565 INFO Stage started: validate_and_profile_data
-2026-09-05 23:07:51,302 INFO Stage finished: validate_and_profile_data in 0.736 seconds
-2026-09-05 23:07:51,303 ERROR MVP pipeline failed: Customer labels are required but were not found at data/parquet/raw/train_labels.parquet. Add the AMEX train_labels file as Parquet.
-Traceback (most recent call last):
-  File "/Users/qrozjr/Documents/gnn-risk-credit-card-default/src/mvp/pipeline.py", line 59, in run
-    labels = repository.load_labels()
-  File "/Users/qrozjr/Documents/gnn-risk-credit-card-default/src/data/parquet_dataset.py", line 100, in load_labels
-    raise DatasetContractError(
-    ...<2 lines>...
-    )
-src.data.parquet_dataset.DatasetContractError: Customer labels are required but were not found at data/parquet/raw/train_labels.parquet. Add the AMEX train_labels file as Parquet.
+2026-11-07 19:03:13,683 INFO Starting the LightGBM MVP pipeline
+2026-11-07 19:03:13,683 INFO Stage started: validate_and_profile_data
+2026-11-07 19:03:14,954 INFO Stage finished: validate_and_profile_data in 1.271 seconds
+2026-11-07 19:03:14,954 INFO Stage started: sample_and_split_customers
+2026-11-07 19:03:15,338 INFO Stage finished: sample_and_split_customers in 0.384 seconds
+2026-11-07 19:03:15,338 INFO Stage started: aggregate_temporal_features
+2026-11-07 19:03:26,404 INFO Stage finished: aggregate_temporal_features in 11.066 seconds
+2026-11-07 19:03:26,405 INFO Stage started: preprocess_features
+2026-11-07 19:03:27,241 INFO Stage finished: preprocess_features in 0.836 seconds
+2026-11-07 19:03:27,241 INFO Stage started: train_lightgbm
+2026-11-07 19:03:34,676 INFO Stage finished: train_lightgbm in 7.435 seconds
+2026-11-07 19:03:34,676 INFO Stage started: evaluate_and_save
+2026-11-07 19:03:34,713 INFO Stage finished: evaluate_and_save in 0.037 seconds
+2026-11-07 19:03:34,714 INFO MVP pipeline completed successfully

@@ -231,5 +231,7 @@ artifacts/*
 artifacts/mvp/*
 !artifacts/mvp/baseline/
 !artifacts/mvp/smoke/
+!artifacts/mvp/gnn/
 !artifacts/mvp/baseline/**
 !artifacts/mvp/smoke/**
+!artifacts/mvp/gnn/metrics.json

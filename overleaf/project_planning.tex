@@ -183,6 +183,25 @@ Results analysis and explainability                  &        &        & \cmark 
 }
 \end{table}
 
+\section{Bounded Real-Data Results}
+\label{sec:results}
+
+The executable protocol was evaluated on a deterministic sample of 10,000
+customers, divided into 6,400 training, 1,600 validation, and 2,000 test
+customers. The LightGBM complete-history baseline obtained an AMEX Score of
+0.7427, ROC-AUC of 0.9522, and PR-AUC of 0.8755. Among the standalone GNN
+configurations, GraphSAGE with the 13-month representation was the strongest,
+with AMEX Score 0.7321, ROC-AUC 0.9436, and PR-AUC 0.8569. The exploratory
+hybrid combining this embedding with tabular features obtained AMEX Score
+0.7403, ROC-AUC 0.9525, and PR-AUC 0.8781.
+
+These results support the feasibility of the inductive implementation but do
+not establish superiority over the tabular baseline. They are bounded-sample
+results and should not be generalized to all customers without a larger
+execution. In addition, the hybrid uses in-sample training embeddings; an
+out-of-fold second-stage experiment remains necessary for a definitive
+hybrid claim.
+
 \bibliographystyle{IEEEtran}
 \bibliography{bibtex}
 
