@@ -235,3 +235,4 @@ artifacts/mvp/*
 !artifacts/mvp/baseline/**
 !artifacts/mvp/smoke/**
 !artifacts/mvp/gnn/metrics.json
+!artifacts/mvp/gnn/hybrid_oof.json

@@ -1,0 +1,25 @@
+{
+  "folds": 3,
+  "hidden_channels": 16,
+  "k": 10,
+  "max_epochs": 30,
+  "metrics": {
+    "amex_score": 0.70372363935434,
+    "brier_score": 0.09046608726882825,
+    "ece": 0.06469002216247113,
+    "f1": 0.7827648114901257,
+    "false_negative": 82,
+    "false_positive": 160,
+    "pr_auc": 0.8393349946293649,
+    "roc_auc": 0.9354245801614224,
+    "threshold": 0.3367292649692042,
+    "true_negative": 1322,
+    "true_positive": 436
+  },
+  "patience": 5,
+  "protocol": "three-fold out-of-fold GraphSAGE hybrid",
+  "sample_customers": 10000,
+  "seed": 42,
+  "total_seconds": 38.22977350000292,
+  "window_months": 13
+}
