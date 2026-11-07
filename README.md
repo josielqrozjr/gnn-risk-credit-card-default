@@ -16,11 +16,34 @@ As analytical extensions, the study investigates a **calibrated Risk Score** and
 
 The central hypothesis is that **customer relational structure, combined with temporal information, provides additional predictive information that independent tabular models do not capture**.
 
-## 0. MVP Implementation Baseline
+## 0. Current Experimental Pipeline
+
+The canonical project workflow is now the complete real-data pipeline. The
+historical `src/mvp/` package and `artifacts/mvp/` directory are retained only
+for backward-compatible smoke and bounded-result reproduction. They are not
+the name or scope of the final project.
+
+To run the complete protocol on all 458,913 customers:
+
+```bash
+python3 -m scripts.run_full_experiments
+```
+
+Use `--dry-run` to inspect the three phases before starting. Logs are written
+to `logs/full-1.log`, `logs/full-2.log`, and `logs/full-3.log`; canonical
+outputs are written under `artifacts/baseline/full/` and
+`artifacts/experiments/full/`.
+
+The total-scale command intentionally preserves the exact feature width and
+protocol. It therefore requires sufficient RAM for the full customer-level
+matrices and full-batch graph phases; it does not silently reduce the sample
+or substitute a smaller experiment.
+
+## 0.1 Historical Bounded Baseline
 
 ### 0.1 Implemented Scope
 
-The current MVP is a reproducible **LightGBM tabular baseline**. It intentionally uses a small scope before graph experiments begin:
+The historical bounded baseline is a reproducible **LightGBM tabular baseline**. It uses a small scope for smoke and development validation:
 
 - lazy validation of partitioned Parquet features;
 - loading and validation of customer labels from a Parquet file, CSV file, or partitioned Parquet directory;
@@ -74,7 +97,7 @@ python3.13 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 .venv/bin/python -m pytest -q
 .venv/bin/python -m scripts.generate_smoke_artifacts
-.venv/bin/python -m src.mvp.run --config configs/mvp.json
+.venv/bin/python -m src.baseline.run --config configs/baseline.json
 ```
 
 The last command reads the supplied partitioned labels and trains the real 10,000-customer baseline. The experimental matrix can be run with:

@@ -181,7 +181,7 @@ class MvpPipeline:
                 handler.flush()
             self.artifacts.write_manifest(
                 {
-                    "command": "python -m src.mvp.run --config configs/mvp.json",
+                    "command": "python -m src.baseline.run --config configs/baseline.json",
                     "seed": self.config.seed,
                 }
             )

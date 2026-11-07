@@ -1,4 +1,4 @@
-"""Command-line entry point for the implementation baseline."""
+"""Compatibility entry point for the tabular baseline."""
 
 from __future__ import annotations
 
@@ -10,15 +10,15 @@ from src.mvp.pipeline import MvpPipeline
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run the LightGBM implementation MVP")
-    parser.add_argument("--config", default="configs/mvp.json")
+    parser = argparse.ArgumentParser(description="Run the LightGBM tabular baseline")
+    parser.add_argument("--config", default="configs/baseline.json")
     arguments = parser.parse_args()
 
     try:
         config = MvpConfig.from_file(arguments.config)
         MvpPipeline(config).run()
     except (DatasetContractError, ValueError) as error:
-        print(f"MVP contract error: {error}")
+        print(f"Baseline contract error: {error}")
         return 2
     return 0
 
