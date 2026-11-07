@@ -225,7 +225,7 @@ __marimo__/
 /experiments/
 /results/
 
-# Only lightweight, sanitized MVP evidence is tracked.
+# Only lightweight, sanitized evidence is tracked.
 artifacts/*
 !artifacts/mvp/
 artifacts/mvp/*
@@ -236,3 +236,11 @@ artifacts/mvp/*
 !artifacts/mvp/smoke/**
 !artifacts/mvp/gnn/metrics.json
 !artifacts/mvp/gnn/hybrid_oof.json
+!artifacts/baseline/
+artifacts/baseline/*
+!artifacts/baseline/full/
+!artifacts/baseline/full/**
+!artifacts/experiments/
+artifacts/experiments/*
+!artifacts/experiments/full/
+!artifacts/experiments/full/**
