@@ -42,14 +42,14 @@ The feature data was validated on September 5, 2026. Customer-level labels have 
 
 | Assessment | Observed status |
 |---|---|
-| Data accessibility | Two readable Parquet partitions totaling 6,641,132,041 bytes |
+| Data accessibility | Two local Parquet partitions totaling 6,641,132,041 bytes; sustained reads were not completed in the current environment |
 | Records | 5,531,451 monthly records |
 | Customers | 458,913 unique customers |
 | Coverage | March 1, 2017 through March 31, 2018 |
 | Schema | 190 columns: `customer_ID`, `S_2`, and 188 model attributes |
-| Labels | Present in `data/parquet/raw/train_labels/` as four Parquet partitions; pipeline validation pending |
-| Hardware | Apple M1, 8 CPU cores, 8 GB RAM, approximately 22 GB free disk during preflight |
-| Real AMEX baseline | Pending the first run with the supplied customer-level labels |
+| Labels | Four Parquet partitions validated: 458,913 customers, 340,085 negatives and 118,828 positives |
+| Hardware | Apple M1, 8 CPU cores, 8 GB RAM; feature partitions are about 3.1 GB each |
+| Real AMEX baseline | Blocked before profiling completed because the local feature partitions could not be read to completion |
 | Synthetic smoke run | Passed end to end; used only to validate implementation |
 
 The configured label location is `data/parquet/raw/train_labels/`, containing partitioned Parquet data with one `customer_ID` and one binary `target` per customer. A single Parquet or CSV file is also supported by changing `labels_path` in the configuration. The pipeline validates the label contract before training and preserves a diagnostic evidence package on failure.
@@ -77,7 +77,7 @@ python3.13 -m venv .venv
 .venv/bin/python -m src.mvp.run --config configs/mvp.json
 ```
 
-The last command is configured to read the supplied partitioned labels and train the real 10,000-customer baseline. Its real-data metrics remain pending until the run completes and is checked.
+The last command is configured to read the supplied partitioned labels and train the real 10,000-customer baseline. The labels are already validated; the run still requires both feature partitions to be available for sustained local Parquet reads.
 
 Tracked evidence:
 
@@ -102,7 +102,7 @@ This anonymous matrix evaluates repository evidence rather than claiming individ
 
 The next delivery gates are:
 
-1. **Baseline gate:** validate the supplied labels, pass the real 10,000-customer run, and review its metrics and resource profile.
+1. **Baseline gate:** make both feature partitions readable locally, pass the real 10,000-customer run, and review its metrics and resource profile.
 2. **Graph gate:** build and validate one normalized kNN graph on the same customer sample without target leakage.
 3. **GNN gate:** compare one GAT configuration against the frozen LightGBM split and metrics.
 4. **Extension gate:** attempt hybrid fusion or larger samples only if memory, runtime, and baseline quality remain acceptable.
