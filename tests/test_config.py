@@ -3,6 +3,7 @@ import json
 import pytest
 
 from src.mvp.config import MvpConfig
+from src.mvp.pipeline import _maximum_resident_set_bytes
 
 
 def test_config_rejects_invalid_split(tmp_path):
@@ -36,3 +37,7 @@ def test_config_rejects_invalid_split(tmp_path):
 
     with pytest.raises(ValueError, match="sum to 1.0"):
         MvpConfig.from_file(path)
+
+
+def test_maximum_resident_set_bytes_is_available_on_current_platform():
+    assert _maximum_resident_set_bytes() > 0

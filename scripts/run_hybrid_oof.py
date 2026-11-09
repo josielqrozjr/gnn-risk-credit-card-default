@@ -63,7 +63,8 @@ def main() -> None:
         tabular["train"], targets["train"], tabular["validation"], targets["validation"],
         tabular["test"], architecture="graphsage", k=args.k,
         hidden_channels=args.hidden_channels, max_epochs=args.max_epochs,
-        patience=args.patience, seed=args.seed,
+        patience=args.patience, seed=args.seed, device=args.device,
+        use_faiss=args.use_faiss,
     )
     hybrid = HybridLightGBMClassifier(
         n_estimators=args.n_estimators, learning_rate=0.05,
@@ -90,6 +91,7 @@ def main() -> None:
         "hidden_channels": args.hidden_channels,
         "max_epochs": args.max_epochs,
         "patience": args.patience,
+        "device": str(next(final_experiment.model.parameters()).device),
         "metrics": metrics,
         "total_seconds": time.perf_counter() - args.started,
     }
@@ -121,7 +123,8 @@ def _build_oof_embeddings(
             features[held_out_indices],
             architecture="graphsage", k=args.k,
             hidden_channels=args.hidden_channels, max_epochs=args.max_epochs,
-            patience=args.patience, seed=seed + fold + 1,
+            patience=args.patience, seed=seed + fold + 1, device=args.device,
+            use_faiss=args.use_faiss,
         )
         embeddings[held_out_indices] = result.validation_embeddings
         print(f"OOF fold {fold + 1}/{args.folds}: {len(held_out_indices)} customers", flush=True)
@@ -142,6 +145,14 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--patience", type=int, default=5)
     parser.add_argument("--n-estimators", type=int, default=50)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
+    parser.add_argument(
+        "--no-faiss",
+        dest="use_faiss",
+        action="store_false",
+        default=True,
+        help="Use scikit-learn instead of FAISS for CPU kNN graph construction.",
+    )
     args = parser.parse_args()
     args.started = time.perf_counter()
     if args.folds < 2:

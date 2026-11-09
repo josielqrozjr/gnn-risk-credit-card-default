@@ -32,30 +32,20 @@ def build_knn_edge_index(
     neighbor_count = min(requested_neighbors, num_nodes)
     target_neighbors = min(k, num_nodes) if include_self else min(k, max(num_nodes - 1, 0))
     indices = _search_neighbors(features, neighbor_count, use_faiss)
-    fallback_indices = None
 
     src_nodes_list: list[int] = []
     dst_nodes_list: list[int] = []
     for src, row in enumerate(indices):
         seen: set[int] = set()
-        candidate_rows = [row]
-        if not include_self and len(row) < num_nodes:
-            if fallback_indices is None:
-                fallback_indices = _search_neighbors(features, num_nodes, use_faiss)
-            candidate_rows.append(fallback_indices[src])
-
-        for candidates in candidate_rows:
-            for dst in candidates:
-                dst_int = int(dst)
-                if not include_self and dst_int == src:
-                    continue
-                if dst_int in seen:
-                    continue
-                seen.add(dst_int)
-                src_nodes_list.append(src)
-                dst_nodes_list.append(dst_int)
-                if len(seen) >= target_neighbors:
-                    break
+        for dst in row:
+            dst_int = int(dst)
+            if not include_self and dst_int == src:
+                continue
+            if dst_int in seen:
+                continue
+            seen.add(dst_int)
+            src_nodes_list.append(src)
+            dst_nodes_list.append(dst_int)
             if len(seen) >= target_neighbors:
                 break
 

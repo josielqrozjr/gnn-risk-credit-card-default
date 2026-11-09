@@ -85,6 +85,8 @@ def main() -> None:
                 max_epochs=args.max_epochs,
                 patience=args.patience,
                 seed=args.seed,
+                use_faiss=args.use_faiss,
+                device=args.device,
             )
             threshold = select_f1_threshold(
                 validation_y, experiment.validation_probabilities
@@ -99,6 +101,7 @@ def main() -> None:
                 {
                     "window_months": window,
                     "architecture": architecture,
+                    "device": str(next(experiment.model.parameters()).device),
                     "feature_count": int(train_x.shape[1]),
                     "training_edges": experiment.training_edge_count,
                     "validation_edges": experiment.validation_edge_count,
@@ -118,6 +121,7 @@ def main() -> None:
                     train_y,
                     validation_y,
                     test_y,
+                    args.use_faiss,
                 )
                 results.append(
                     {
@@ -143,6 +147,7 @@ def main() -> None:
         "hidden_channels": args.hidden_channels,
         "max_epochs": args.max_epochs,
         "patience": args.patience,
+        "device": args.device,
         "results": results,
         "total_seconds": time.perf_counter() - started,
     }
@@ -162,13 +167,16 @@ def _evaluate_hybrid(
     train_y: np.ndarray,
     validation_y: np.ndarray,
     test_y: np.ndarray,
+    use_faiss: bool,
 ) -> dict[str, float | int]:
     scaled_train = experiment.scaler.transform(train_x)
-    training_edges = build_knn_edge_index(scaled_train, k=10, include_self=False)
+    training_edges = build_knn_edge_index(
+        scaled_train, k=10, use_faiss=use_faiss, include_self=False
+    )
     training_graph = Data(
         x=torch.from_numpy(np.ascontiguousarray(scaled_train)),
         edge_index=torch.from_numpy(np.ascontiguousarray(training_edges)),
-    )
+    ).to(next(experiment.model.parameters()).device)
     train_embeddings = extract_gnn_embeddings(
         experiment.model, training_graph, scaled_train.shape[0]
     )
@@ -210,6 +218,14 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--max-epochs", type=int, default=30)
     parser.add_argument("--patience", type=int, default=5)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
+    parser.add_argument(
+        "--no-faiss",
+        dest="use_faiss",
+        action="store_false",
+        default=True,
+        help="Use scikit-learn instead of FAISS for CPU kNN graph construction.",
+    )
     return parser.parse_args()
 
 

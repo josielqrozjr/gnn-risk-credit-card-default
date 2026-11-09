@@ -100,6 +100,21 @@ python3.13 -m venv .venv
 .venv/bin/python -m src.baseline.run --config configs/baseline.json
 ```
 
+On Windows with an NVIDIA GPU, install the CUDA-enabled GNN dependencies in a
+short-path virtual environment to avoid Windows path-length issues:
+
+```powershell
+py -3.13 -m venv C:\gnn-venv
+C:\gnn-venv\Scripts\python.exe -m pip install -r requirements-gnn.txt
+C:\gnn-venv\Scripts\python.exe -m scripts.run_full_experiments
+```
+
+The GNN scripts use CUDA automatically when it is available and FAISS for
+memory-bounded CPU kNN graph construction. Use `--device cuda` to require the
+GPU or `--device cpu` to force CPU execution. Pass `--no-faiss` only for small
+debugging datasets.
+The LightGBM baseline and hybrid tabular classifier remain CPU-based.
+
 The last command reads the supplied partitioned labels and trains the real 10,000-customer baseline. The experimental matrix can be run with:
 
 ```bash

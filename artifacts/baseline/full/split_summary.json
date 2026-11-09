@@ -1,0 +1,17 @@
+{
+  "test": {
+    "customers": 91783,
+    "target_0": 68017,
+    "target_1": 23766
+  },
+  "train": {
+    "customers": 293704,
+    "target_0": 217654,
+    "target_1": 76050
+  },
+  "validation": {
+    "customers": 73426,
+    "target_0": 54414,
+    "target_1": 19012
+  }
+}

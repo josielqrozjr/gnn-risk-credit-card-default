@@ -1,0 +1,14 @@
+2026-11-09 11:27:43,823 INFO Starting the LightGBM MVP pipeline
+2026-11-09 11:27:43,824 INFO Stage started: validate_and_profile_data
+2026-11-09 11:27:44,915 INFO Stage finished: validate_and_profile_data in 1.091 seconds
+2026-11-09 11:27:44,915 INFO Stage started: sample_and_split_customers
+2026-11-09 11:27:45,937 INFO Stage finished: sample_and_split_customers in 1.022 seconds
+2026-11-09 11:27:45,937 INFO Stage started: aggregate_temporal_features
+2026-11-09 11:28:26,429 INFO Stage finished: aggregate_temporal_features in 40.486 seconds
+2026-11-09 11:28:26,435 INFO Stage started: preprocess_features
+2026-11-09 11:29:05,874 INFO Stage finished: preprocess_features in 39.422 seconds
+2026-11-09 11:29:05,875 INFO Stage started: train_lightgbm
+2026-11-09 11:31:07,420 INFO Stage finished: train_lightgbm in 121.544 seconds
+2026-11-09 11:31:07,420 INFO Stage started: evaluate_and_save
+2026-11-09 11:31:08,124 INFO Stage finished: evaluate_and_save in 0.705 seconds
+2026-11-09 11:31:08,127 INFO MVP pipeline completed successfully

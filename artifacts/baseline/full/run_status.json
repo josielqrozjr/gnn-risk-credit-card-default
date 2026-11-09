@@ -1,0 +1,13 @@
+{
+  "peak_rss_bytes": 10230009856,
+  "stage_seconds": {
+    "aggregate_temporal_features": 40.485853600000155,
+    "evaluate_and_save": 0.7045930000003864,
+    "preprocess_features": 39.422245400000065,
+    "sample_and_split_customers": 1.0217993999999635,
+    "train_lightgbm": 121.54364040000019,
+    "validate_and_profile_data": 1.09128950000013
+  },
+  "status": "success",
+  "total_seconds": 204.3118754000002
+}

@@ -1,0 +1,21 @@
+{
+  "cpu_model": "AMD64 Family 25 Model 33 Stepping 2, AuthenticAMD",
+  "disk_free_bytes": 162318569472,
+  "logical_cpus": 12,
+  "machine": "AMD64",
+  "packages": {
+    "joblib": "1.6.0",
+    "lightgbm": "4.7.0",
+    "numpy": "2.5.2",
+    "pandas": "3.0.5",
+    "polars": "1.44.1",
+    "psutil": "7.2.2",
+    "pyarrow": "25.0.1",
+    "scikit-learn": "1.9.0"
+  },
+  "physical_cpus": 6,
+  "platform": "Windows-11-10.0.26300-SP0",
+  "processor": "AMD64 Family 25 Model 33 Stepping 2, AuthenticAMD",
+  "python": "3.13.14",
+  "ram_bytes": 34277335040
+}
