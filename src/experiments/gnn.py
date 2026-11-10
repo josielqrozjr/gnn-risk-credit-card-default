@@ -54,7 +54,8 @@ def run_inductive_gnn_experiment(
     max_epochs: int = 100,
     patience: int = 10,
     seed: int = 42,
-    use_faiss: bool = False,
+    use_faiss: bool = True,
+    device: str = "auto",
 ) -> GNNExperimentResult:
     """Train on a train-only graph and infer held-out customers as queries."""
     if validation_features.shape[0] == 0 or test_features.shape[0] == 0:
@@ -81,9 +82,12 @@ def run_inductive_gnn_experiment(
         train_x, test_x, k=k, use_faiss=use_faiss
     )
 
-    train_graph = _graph_data(train_x, training_edges)
-    validation_graph = _query_graph(train_x, validation_x, training_edges, validation_edges)
-    test_graph = _query_graph(train_x, test_x, training_edges, test_edges)
+    torch_device = _resolve_device(device)
+    train_graph = _graph_data(train_x, training_edges).to(torch_device)
+    validation_graph = _query_graph(
+        train_x, validation_x, training_edges, validation_edges
+    ).to(torch_device)
+    test_graph = _query_graph(train_x, test_x, training_edges, test_edges).to(torch_device)
 
     torch.manual_seed(seed)
     model = GraphClassifier(
@@ -92,7 +96,7 @@ def run_inductive_gnn_experiment(
         hidden_channels=hidden_channels,
         heads=heads,
         dropout=dropout,
-    )
+    ).to(torch_device)
     training = fit_gnn_classifier(
         model,
         train_graph,
@@ -129,6 +133,16 @@ def _graph_data(features: np.ndarray, edge_index: np.ndarray) -> Data:
         x=torch.from_numpy(np.ascontiguousarray(features)),
         edge_index=torch.from_numpy(np.ascontiguousarray(edge_index)),
     )
+
+
+def _resolve_device(device: str) -> torch.device:
+    if device == "auto":
+        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if device == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("CUDA was requested but is not available in this PyTorch installation")
+    if device not in {"cpu", "cuda"}:
+        raise ValueError("device must be one of: auto, cpu, cuda")
+    return torch.device(device)
 
 
 def _query_graph(

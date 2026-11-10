@@ -1,0 +1,59 @@
+{
+  "files": [
+    {
+      "bytes": 583,
+      "path": "config.json",
+      "sha256": "445efc44810d58dbc260d7e79729565139339de38bf82a4ffa370884e8920a8d"
+    },
+    {
+      "bytes": 419,
+      "path": "data_profile.json",
+      "sha256": "a969bd739ee340bd6a92568c9a601a7c121b59db7b6da01d49889831e36f0dcd"
+    },
+    {
+      "bytes": 548,
+      "path": "environment.json",
+      "sha256": "c8edc11a1cc77b4d4a01da4bbb953fa67a8bfa0817b2497b318b7fa9f78f70bc"
+    },
+    {
+      "bytes": 1051,
+      "path": "execution.log",
+      "sha256": "865462d6135b563ee57dab723a4a8a28acb0c8175d7c421f5b53adcb786a69af"
+    },
+    {
+      "bytes": 29013,
+      "path": "feature_importance.csv",
+      "sha256": "e395f014f0ce7228079f25b9fa4870a8d0f883f6e204f7828e0035ac89a6b673"
+    },
+    {
+      "bytes": 341,
+      "path": "metrics.json",
+      "sha256": "22aa2fef2a2d1d6621b1b1a61721a6b841aa910ec968a1d86f6d96bf5af3313e"
+    },
+    {
+      "bytes": 963588,
+      "path": "model.txt",
+      "sha256": "54d45eec46f453cd8678b0259f7d5f978bb22ee1abcc68f3437364ecbe005dd7"
+    },
+    {
+      "bytes": 27123,
+      "path": "preprocessor.joblib",
+      "sha256": "cc070e05e212cf1ea4d03c494c3f72313945ed52b75378dbeebd7e354f29839c"
+    },
+    {
+      "bytes": 416,
+      "path": "run_status.json",
+      "sha256": "1e48ef32958d9b89134984ddb85f8fe8cd72aa7b168f6c007d30d3e209fdf26d"
+    },
+    {
+      "bytes": 270,
+      "path": "split_summary.json",
+      "sha256": "0bfec9c284fa31daa022f2017f3932be2c93887621ec514b9e26a6572f70c4ac"
+    }
+  ],
+  "generated_at_utc": "2026-11-09T14:31:08.293052+00:00",
+  "run": {
+    "command": "python -m src.baseline.run --config configs/baseline.json",
+    "seed": 42
+  }
+}

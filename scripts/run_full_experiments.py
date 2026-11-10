@@ -23,6 +23,10 @@ def main() -> int:
             "src.baseline.run",
             "--config",
             "configs/baseline.json",
+            "--sample-customers",
+            str(args.sample_customers),
+            "--artifacts-dir",
+            str(args.output_dir / "baseline"),
         ],
         [
             sys.executable,
@@ -33,9 +37,11 @@ def main() -> int:
             "--labels-path",
             "data/raw/parquet/train_labels",
             "--sample-customers",
-            str(CUSTOMERS),
+            str(args.sample_customers),
             "--output",
-            "artifacts/experiments/full/metrics.json",
+            str(args.output_dir / "metrics.json"),
+            "--device",
+            args.device,
         ],
         [
             sys.executable,
@@ -46,9 +52,11 @@ def main() -> int:
             "--labels-path",
             "data/raw/parquet/train_labels",
             "--sample-customers",
-            str(CUSTOMERS),
+            str(args.sample_customers),
             "--output",
-            "artifacts/experiments/full/hybrid_oof.json",
+            str(args.output_dir / "hybrid_oof.json"),
+            "--device",
+            args.device,
         ],
     ]
     if args.dry_run:
@@ -58,7 +66,7 @@ def main() -> int:
 
     Path("logs").mkdir(exist_ok=True)
     for index, command in enumerate(commands, start=1):
-        log_path = Path("logs") / f"full-{index}.log"
+        log_path = Path("logs") / f"{args.log_prefix}-{index}.log"
         print(f"[{index}/{len(commands)}] {' '.join(command)}", flush=True)
         with log_path.open("w", encoding="utf-8") as log:
             completed = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=False)
@@ -72,6 +80,12 @@ def main() -> int:
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--sample-customers", type=int, default=CUSTOMERS)
+    parser.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
+    parser.add_argument(
+        "--output-dir", type=Path, default=Path("artifacts/experiments/full")
+    )
+    parser.add_argument("--log-prefix", default="full")
     return parser.parse_args()
 
 

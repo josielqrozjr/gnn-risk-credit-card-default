@@ -5,7 +5,6 @@ from __future__ import annotations
 import importlib.metadata
 import logging
 import platform
-import resource
 import subprocess
 import sys
 import time
@@ -219,6 +218,11 @@ def _configure_logger(path: Path) -> logging.Logger:
 
 
 def _maximum_resident_set_bytes() -> int:
+    if sys.platform == "win32":
+        return psutil.Process().memory_info().rss
+
+    import resource
+
     value = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     return int(value if sys.platform == "darwin" else value * 1024)
 
