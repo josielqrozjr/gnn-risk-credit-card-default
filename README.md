@@ -16,6 +16,23 @@ As analytical extensions, the study investigates a **calibrated Risk Score** and
 
 The central hypothesis is that **customer relational structure, combined with temporal information, provides additional predictive information that independent tabular models do not capture**.
 
+## Final status
+
+The project is finalized for the defined empirical scope. The complete
+LightGBM baseline was executed on all 458,913 customers. The relational
+experiments were executed with CUDA-enabled support at 25% and 50% of the
+customer population, using the same customer-disjoint inductive protocol.
+GraphSAGE was the strongest GNN family, but it did not outperform LightGBM.
+
+The final conclusion is that, under this protocol, relational message passing
+did not provide predictive gain over the tabular representation. The 50%
+Hybrid OOF run was anomalous under GPU memory pressure and is excluded from
+the conclusion. A 100% full-batch GNN run remains a scalability limitation,
+not an unreported result.
+
+See [`RELATORIO_RESULTADOS.md`](RELATORIO_RESULTADOS.md) for the consolidated
+results and limitations.
+
 ## 0. Current Experimental Pipeline
 
 The canonical project workflow is now the complete real-data pipeline. The
@@ -39,7 +56,7 @@ protocol. It therefore requires sufficient RAM for the full customer-level
 matrices and full-batch graph phases; it does not silently reduce the sample
 or substitute a smaller experiment.
 
-## 0.1 Historical Bounded Baseline
+## 0.1 Baseline and final experiment artifacts
 
 ### 0.1 Implemented Scope
 
@@ -57,7 +74,10 @@ The historical bounded baseline is a reproducible **LightGBM tabular baseline**.
 - held-out ROC-AUC, PR-AUC, F1, Brier Score, ECE, and AMEX Score;
 - execution logs, environment metadata, model weights, feature importance, and SHA-256 artifact manifests.
 
-GNN training, graph construction, multiview features, hybrid fusion, calibration fitting, explainability, and full-data model training are outside this MVP. The baseline validates the engineering workflow, but it does not yet validate the relational research hypothesis.
+GNN training, graph construction, multiview features, hybrid fusion and
+CUDA-enabled execution are implemented in the final experiment workflow.
+Calibration fitting, operational Risk Score bands and individual
+explanations remain outside the implemented scope.
 
 ### 0.2 Current Execution Status
 
@@ -72,7 +92,7 @@ The feature data was validated on September 5, 2026. Customer-level labels have 
 | Schema | 190 columns: `customer_ID`, `S_2`, and 188 model attributes |
 | Labels | Four Parquet partitions validated: 458,913 customers, 340,085 negatives and 118,828 positives |
 | Hardware | Apple M1, 8 CPU cores, 8 GB RAM; feature partitions are about 3.1 GB each |
-| Real AMEX baseline | Completed on a deterministic 10,000-customer sample |
+| Real AMEX baseline | Completed on all 458,913 customers |
 | Synthetic smoke run | Passed end to end; used only to validate implementation |
 
 The configured label location is `data/raw/parquet/train_labels/`, containing partitioned Parquet data with one `customer_ID` and one binary `target` per customer. A single Parquet or CSV file is also supported by changing `labels_path` in the configuration. The pipeline validates the label contract before training and preserves a diagnostic evidence package on failure.
@@ -115,16 +135,17 @@ GPU or `--device cpu` to force CPU execution. Pass `--no-faiss` only for small
 debugging datasets.
 The LightGBM baseline and hybrid tabular classifier remain CPU-based.
 
-The last command reads the supplied partitioned labels and trains the real 10,000-customer baseline. The experimental matrix can be run with:
+The baseline command reads the supplied partitioned labels and trains the
+real model. The complete CUDA experiment matrix can be run with:
 
 ```bash
-python3 -m scripts.run_real_experiments \
-  --features-glob 'data/raw/parquet/data_*.parquet' \
-  --labels-path data/raw/parquet/train_labels \
-  --output artifacts/mvp/gnn/metrics.json
+python3 -m scripts.run_full_experiments --sample-customers 229457 --device cuda
 ```
 
-The GNN runner evaluates 3M, 6M, and 13M temporal windows with GCN, GraphSAGE, and GAT under the same customer-disjoint inductive protocol.
+The runner evaluates 3M, 6M, and 13M temporal windows with GCN, GraphSAGE,
+and GAT under the same customer-disjoint inductive protocol. On Windows,
+use a short virtual-environment path and the CUDA-enabled requirements
+described above.
 
 ### 0.4 Real-data results
 
@@ -146,21 +167,18 @@ test metrics were:
 | GraphSAGE, 13M | **0.7321** | **0.9436** | **0.8569** | **0.0851** | 0.0331 |
 | GAT, 13M | 0.6253 | 0.9044 | 0.7866 | 0.1209 | 0.0980 |
 
-These are bounded-sample results, not full-dataset claims. On this protocol,
-the tabular baseline remains stronger than the standalone GNNs and the
-methodologically definitive OOF hybrid. GraphSAGE with the 13-month view is
-the strongest standalone GNN configuration. The OOF hybrid trains its
-second-stage classifier only on embeddings generated by models that did not
-see each corresponding training customer's label. The exploratory in-sample
-hybrid is intentionally not used as the final conclusion. The complete
-machine-readable results are stored in
-`artifacts/mvp/gnn/metrics.json`.
-The definitive hybrid result is stored in
-`artifacts/mvp/gnn/hybrid_oof.json`.
+The complete consolidated results are in
+[`RELATORIO_RESULTADOS.md`](RELATORIO_RESULTADOS.md). At 25%, LightGBM
+obtained AMEX 0.7798 versus 0.7058 for the best GNN. At 50%, LightGBM
+obtained AMEX 0.7819 versus 0.7084 for the best GNN. GraphSAGE was the best
+GNN in both scales. The 50% OOF hybrid result is anomalous (AMEX -0.2297,
+ROC-AUC 0.2439) because of GPU memory pressure and must not be reported.
 
 Tracked evidence:
 
-- [`artifacts/mvp/baseline/`](artifacts/mvp/baseline/): real-data preflight log, profile, environment, failure status, and manifest;
+- [`artifacts/baseline/full/`](artifacts/baseline/full/): full-customer LightGBM baseline and metrics;
+- [`artifacts/experiments/25pct/`](artifacts/experiments/25pct/): CUDA experiment results at 25%;
+- [`artifacts/experiments/50pct/`](artifacts/experiments/50pct/): CUDA experiment results at 50%;
 - [`artifacts/mvp/smoke/`](artifacts/mvp/smoke/): synthetic execution log, metrics, model weights, preprocessing state, feature importance, and manifest.
 
 Raw data, row-level predictions, customer identifiers, processed matrices, and large experiment outputs are never included in these artifact packages.
@@ -171,22 +189,18 @@ This anonymous matrix evaluates repository evidence rather than claiming individ
 
 | Capability | Current evidence | Status and mitigation |
 |---|---|---|
-| Parquet and Polars data engineering | Lazy partition discovery, schema validation, and customer filtering | Available for the MVP |
+| Parquet and Polars data engineering | Lazy partition discovery, schema validation, and customer filtering | Available and executed at full customer scale |
 | Leakage-safe supervised evaluation | Customer-level stratified split and train-only preprocessing | Available and tested |
 | LightGBM baseline modeling | Training, early stopping, persistence, and feature importance | Available and tested |
 | Metrics and experimental reporting | AMEX Score, discrimination, calibration, logs, and manifests | Available and tested |
 | PyTorch Geometric and GNN modeling | GCN, GraphSAGE, and GAT classifiers with a real-data multiview experiment runner | Results are recorded in `artifacts/mvp/gnn/metrics.json` |
-| Scalable graph construction | Existing sparse kNN utility without a full-data benchmark | Gap: benchmark FAISS and memory use on a bounded sample |
-| Scientific reporting | Research questions, hypotheses, and planned ablations | Available; measured results remain pending |
+| Scalable graph construction | Sparse FAISS-backed kNN with CUDA-capable experiment runner | Validated up to 50% of customers |
+| Scientific reporting | Research questions, hypotheses, comparisons and limitations | Completed in `RELATORIO_RESULTADOS.md` |
 
-The next delivery gates are:
-
-1. **Baseline gate:** completed; real metrics and resource profile are recorded in `artifacts/mvp/baseline/`.
-2. **Graph gate:** completed by the inductive runner using normalized training-only kNN graphs.
-3. **GNN gate:** completed for the three horizons and three supported architectures.
-4. **Extension gate:** attempt hybrid fusion or larger samples only if memory, runtime, and baseline quality remain acceptable.
-
-With 8 GB RAM, a full 458,913-customer wide aggregation and graph should not be the default local experiment. The 10,000-customer cap is a deliberate reliability constraint and can be increased through configuration after resource measurements.
+All defined delivery gates are complete. A full-customer LightGBM baseline is
+available, while the GNN protocol is reported at the largest stable scale
+achieved with the available GPU memory. The project does not claim a
+100%-customer full-batch GNN result.
 
 ## 1. Research Questions
 
@@ -324,7 +338,12 @@ Each customer's monthly temporal dimension will be condensed into static and dyn
 - Trends and slopes: `total_delta` = $X_{\mathrm{last}} - X_{\mathrm{first}}$, and `avg_monthly_slope` = $\frac{X_{\mathrm{last}} - X_{\mathrm{first}}}{n - 1}$.
 - Volatility and categorical-state dynamics, including the number of transitions and the last state.
 
-The implemented `aggregate_temporal_features` utility preserves the MVP's full-history schema by default and can independently derive trailing-window statistics for any positive month horizons. Windowed numeric features include mean, standard deviation, minimum, maximum, first/last values, total difference, and average slope; categorical features include the latest state, number of observed states, and within-window transitions. The experiment runner still needs to orchestrate 3M/6M/13M model comparisons.
+The implemented `aggregate_temporal_features` utility preserves the historical
+full-history schema by default and derives independent 3M/6M/13M views.
+Windowed numeric features include mean, standard deviation, minimum, maximum,
+first/last values, total difference, and average slope; categorical features
+include the latest state, number of observed states, and within-window
+transitions. The real-data runner executes the three-horizon comparison.
 
 ## 7. Behavioral Graph Construction and Scalability
 
@@ -336,7 +355,11 @@ The implemented `aggregate_temporal_features` utility preserves the MVP's full-h
   - Sparse edge-list storage through `torch_geometric.data.Data(edge_index=...)`, without materializing dense adjacency matrices.
   - Mini-batching through neighbor sampling with `NeighborLoader`.
 
-The `GraphFeatureScaler` fits standardization on training nodes and applies the fixed transform to held-out nodes. The `build_knn_edge_index` utility constructs a sparse directed graph over a training sample using scikit-learn or FAISS. `build_inductive_knn_edge_index` fits neighbor search on training features only and creates directed training-to-query edges for held-out customers, with query-node indices offset for appending to the training graph. Both utilities reject non-finite inputs; approximate indexing, cosine distance, and broader graph-integrity diagnostics remain planned extensions.
+The `GraphFeatureScaler` fits standardization on training nodes and applies the
+fixed transform to held-out nodes. The graph utilities construct sparse
+directed training graphs and inductive train-to-query edges using scikit-learn
+or FAISS. Both utilities reject non-finite inputs. Cosine distance and
+additional graph diagnostics remain outside the final evaluated scope.
 
 ## 8. Models, Multiview Fusion, and Hybrid Approach
 
@@ -370,7 +393,12 @@ GraphSAGE
 GAT
 ```
 
-The repository includes a two-layer `GraphClassifier` supporting GCN, GraphSAGE, and GAT, plus a full-batch trainer that restores the best validation-loss checkpoint and rejects query-to-training message edges. The one-view experiment runner builds a training-only graph, queries validation and test customers independently, and returns their probabilities and frozen embeddings. The implementation is covered by optional PyTorch Geometric tests; the three-horizon orchestration and real-data benchmark remain pending.
+The repository includes a two-layer `GraphClassifier` supporting GCN,
+GraphSAGE, and GAT, plus a full-batch trainer that restores the best
+validation-loss checkpoint and rejects query-to-training message edges. The
+experiment runner builds training-only graphs, queries validation and test
+customers independently, and returns probabilities and frozen embeddings. The
+three-horizon real-data benchmark is recorded in the results report.
 
 ### 8.2 Multiview Fusion
 
@@ -538,7 +566,9 @@ The project schedule covers ten weeks, beginning with the submission of the prop
 
 ## 13. Repository and Source Code
 
-The repository separates reusable source modules from local datasets, experimental scripts, lightweight evidence, and research documents. The current implementation includes a tested tabular MVP while the graph research modules remain an extension path.
+The repository separates reusable source modules from local datasets,
+experimental scripts, sanitized evidence, and research documents. The current
+implementation includes the final tested tabular and graph experiment workflow.
 
 ### 13.1 Current Source Modules
 
@@ -547,7 +577,7 @@ The repository separates reusable source modules from local datasets, experiment
 - `src/preprocessing/transformations.py`: learns imputations, feature filtering, and categorical mappings from training data only.
 - `src/preprocessing/graph_scaling.py`: fits graph-feature standardization on training nodes and reuses it for query nodes.
 - `src/temporal_features/aggregation.py`: aggregates customer histories into numerical statistics and latest categorical states.
-- `src/models/lightgbm_baseline.py`: trains, evaluates, and saves the MVP baseline.
+- `src/models/lightgbm_baseline.py`: trains, evaluates, and saves the tabular baseline.
 - `src/evaluation/metrics.py`: implements AMEX Score, ROC-AUC, PR-AUC, F1, Brier Score, and ECE.
 - `src/reporting/artifacts.py`: writes atomic artifacts and SHA-256 manifests.
 - `src/mvp/pipeline.py` and `src/mvp/run.py`: provide orchestration and the command-line entry point.
@@ -557,7 +587,7 @@ The repository separates reusable source modules from local datasets, experiment
 - `src/models/gnn.py`: implements GCN, GraphSAGE, and GAT classifiers, validation-based early stopping, and inductive query prediction.
 - `src/models/hybrid.py`: concatenates tabular features with GNN embeddings and trains a LightGBM classifier.
 - `tests/`: covers configuration, schemas, splitting, temporal aggregation, preprocessing, metrics, privacy, artifact integrity, and the end-to-end CLI.
-- `requirements.txt`: pins the tabular MVP runtime; `requirements-gnn.txt` contains optional future graph dependencies.
+- `requirements.txt`: pins the tabular runtime; `requirements-gnn.txt` contains the CUDA/GNN experiment dependencies.
 - `overleaf/`: existing local directory reserved for the research article and related publication assets.
 
 ### 13.2 Current and Planned Directory Structure
@@ -644,7 +674,8 @@ Local datasets and heavy output directories must not be committed. Only sanitize
 
 ### 13.3 Dependencies
 
-The default dependencies are limited to the executable tabular MVP:
+The default dependencies provide the executable tabular baseline, while
+`requirements-gnn.txt` adds the CUDA/GNN experiment stack:
 
 - Pandas and Polars for tabular and temporal processing;
 - PyArrow for Parquet metadata and schema validation;
@@ -664,4 +695,9 @@ Future graph experiments can install `requirements-gnn.txt` after the baseline g
 
 This research establishes a rigorous investigation into the information gain produced by relational structures combined with different temporal horizons in the financial domain. By focusing on the supervised core and excluding unnecessarily costly approaches such as reinforcement-learning formulations, the project preserves experimental rigor and remains technically and computationally feasible for the team.
 
-The repository will evolve incrementally from its tested tabular MVP toward the complete graph pipeline documented above. Every implementation stage should preserve customer-disjoint evaluation, target-independent topology construction, inductive inference, sparse graph processing, reproducible ablations, and a final one-time evaluation on the held-out test set.
+The completed workflow preserves customer-disjoint evaluation,
+target-independent topology construction, inductive inference, sparse graph
+processing, reproducible comparisons, and held-out test evaluation. The
+remaining limitations are documented in `RELATORIO_RESULTADOS.md`, including
+the absence of operational Risk Score calibration/explanations and the
+instability of the 50% OOF hybrid under GPU memory pressure.
